@@ -220,3 +220,185 @@ button {
     flex-direction: column;
   }
 }
+
+.navigation a {
+  text-decoration: none;
+}
+
+.secondaryButton {
+  display: block;
+  text-align: center;
+  text-decoration: none;
+}
+
+.logoLink {
+  display: block;
+  color: white;
+  text-decoration: none;
+}
+
+.backLink {
+  display: inline-block;
+  margin-bottom: 32px;
+  color: #756242;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.backLink:hover {
+  color: #8b3f2f;
+}
+
+.characterHeader {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  margin-bottom: 32px;
+}
+
+.characterHeader h1 {
+  margin: 4px 0 8px;
+  font-size: 38px;
+}
+
+.characterAvatar {
+  width: 100px;
+  height: 100px;
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #31483a, #73846c);
+  color: white;
+  font-size: 48px;
+  font-weight: 700;
+}
+
+.characterTabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 28px;
+  padding-bottom: 12px;
+  overflow-x: auto;
+  border-bottom: 1px solid #d8cfbf;
+}
+
+.characterTab {
+  padding: 10px 14px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: #625b51;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.characterTab:hover,
+.characterTab.active {
+  background: #34463b;
+  color: white;
+}
+
+.characterContent {
+  display: grid;
+  gap: 24px;
+}
+
+.valueGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(150px, 1fr));
+  gap: 18px;
+}
+
+.valueCard {
+  padding: 22px;
+  border: 1px solid #ddd4c4;
+  border-radius: 12px;
+  background: white;
+}
+
+.valueCard span {
+  display: block;
+  color: #6d675d;
+}
+
+.valueCard strong {
+  display: block;
+  margin: 8px 0 2px;
+  font-size: 34px;
+}
+
+.valueCard small {
+  color: #8b3f2f;
+  font-weight: 700;
+}
+
+.informationPanel {
+  padding: 26px;
+  border: 1px solid #ddd4c4;
+  border-radius: 12px;
+  background: white;
+}
+
+.informationPanel h2 {
+  margin-top: 0;
+}
+
+.informationPanel p {
+  margin-bottom: 0;
+  color: #625b51;
+  line-height: 1.6;
+}
+
+.informationList {
+  margin: 0;
+}
+
+.informationList div {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 14px 0;
+  border-bottom: 1px solid #ebe5da;
+}
+
+.informationList div:last-child {
+  border-bottom: none;
+}
+
+.informationList dt {
+  color: #6d675d;
+}
+
+.informationList dd {
+  margin: 0;
+  font-weight: 700;
+}
+
+.notFoundPage {
+  min-height: 100vh;
+  padding: 60px;
+  background: #f3efe6;
+}
+
+.linkButton {
+  display: inline-block;
+  margin-top: 20px;
+  text-decoration: none;
+}
+
+@media (max-width: 700px) {
+  .valueGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .characterHeader {
+    align-items: flex-start;
+  }
+
+  .characterAvatar {
+    width: 75px;
+    height: 75px;
+    font-size: 36px;
+  }
+}
