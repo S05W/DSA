@@ -1,3 +1,10 @@
+export type TalentCategory =
+  | "Körpertalente"
+  | "Gesellschaftstalente"
+  | "Naturtalente"
+  | "Wissenstalente"
+  | "Handwerkstalente";
+
 export interface AttributeValue {
   short: string;
   name: string;
@@ -6,7 +13,7 @@ export interface AttributeValue {
 
 export interface TalentValue {
   name: string;
-  category: string;
+  category: TalentCategory;
   value: number;
 }
 
@@ -17,8 +24,16 @@ export interface SpellValue {
   cost: string;
 }
 
+export interface EquipmentItem {
+  id: string;
+  name: string;
+  quantity: number;
+  notes: string;
+}
+
 export interface Hero {
   id: number;
+  ownerId: string;
   name: string;
   title?: string;
   profession: string;
@@ -40,5 +55,5 @@ export interface Hero {
   attributes: AttributeValue[];
   talents: TalentValue[];
   spells: SpellValue[];
-  equipment: string[];
+  equipment: EquipmentItem[];
 }

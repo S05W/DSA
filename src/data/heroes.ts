@@ -1,8 +1,10 @@
 import type { Hero } from "../models/Hero";
+import { createDefaultTalents } from "./talents";
 
-export const heroes: Hero[] = [
-  {
+export function createDefaultHero(ownerId: string): Hero {
+  return {
     id: 1,
+    ownerId,
     name: "Aurelius von Gareth",
     title: "Adept der Kampfmagie",
     profession: "Gildenmagier · Feldmagier",
@@ -32,59 +34,18 @@ export const heroes: Hero[] = [
       { short: "KO", name: "Konstitution", value: 12 },
       { short: "KK", name: "Körperkraft", value: 10 },
     ],
-    talents: [
-      { name: "Magiekunde", category: "Wissen", value: 12 },
-      { name: "Heilkunde Wunden", category: "Wissen", value: 8 },
-      { name: "Alchimie", category: "Wissen", value: 10 },
-      { name: "Sinnesschärfe", category: "Körper", value: 7 },
-      { name: "Menschenkenntnis", category: "Gesellschaft", value: 8 },
-    ],
+    talents: createDefaultTalents(),
     spells: [
       { name: "Ignifaxius", check: "MU / KL / CH", value: 10, cost: "8 AsP" },
       { name: "Fulminictus", check: "MU / IN / KO", value: 10, cost: "8 AsP" },
       { name: "Balsam Salabunde", check: "KL / IN / FF", value: 9, cost: "variabel" },
       { name: "Blitz dich find", check: "MU / IN / CH", value: 8, cost: "4 AsP" },
     ],
-    equipment: ["Magierstab", "Zauberbuch", "Alchimistenbesteck", "Robuste Reisekleidung"],
-  },
-  {
-    id: 2,
-    name: "Ragna Sturmtochter",
-    title: "Schildmaid aus Thorwal",
-    profession: "Kriegerin",
-    species: "Mensch",
-    culture: "Thorwal",
-    experienceLevel: "Erfahren",
-    adventurePoints: 1200,
-    spentAdventurePoints: 1170,
-    lifePoints: 34,
-    maxLifePoints: 34,
-    astralPoints: 0,
-    maxAstralPoints: 0,
-    fatePoints: 3,
-    maxFatePoints: 3,
-    description:
-      "Eine unbeirrbare Schildmaid, die ihre Gefährten mit Axt, Mut und trockenem Humor durch jede Gefahr führt.",
-    quote: "Ein guter Plan beginnt mit einem festen Stand.",
-    initials: "RS",
-    accent: "ruby",
-    attributes: [
-      { short: "MU", name: "Mut", value: 15 },
-      { short: "KL", name: "Klugheit", value: 11 },
-      { short: "IN", name: "Intuition", value: 13 },
-      { short: "CH", name: "Charisma", value: 12 },
-      { short: "FF", name: "Fingerfertigkeit", value: 11 },
-      { short: "GE", name: "Gewandtheit", value: 13 },
-      { short: "KO", name: "Konstitution", value: 15 },
-      { short: "KK", name: "Körperkraft", value: 15 },
+    equipment: [
+      { id: crypto.randomUUID(), name: "Magierstab", quantity: 1, notes: "Holzstab mit Smaragd" },
+      { id: crypto.randomUUID(), name: "Zauberbuch", quantity: 1, notes: "" },
+      { id: crypto.randomUUID(), name: "Alchimistenbesteck", quantity: 1, notes: "" },
+      { id: crypto.randomUUID(), name: "Robuste Reisekleidung", quantity: 1, notes: "" },
     ],
-    talents: [
-      { name: "Körperbeherrschung", category: "Körper", value: 11 },
-      { name: "Kraftakt", category: "Körper", value: 12 },
-      { name: "Einschüchtern", category: "Gesellschaft", value: 9 },
-      { name: "Fischen & Angeln", category: "Natur", value: 8 },
-    ],
-    spells: [],
-    equipment: ["Skraja", "Rundschild", "Kettenhemd", "Trinkhorn"],
-  },
-];
+  };
+}

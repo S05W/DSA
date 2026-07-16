@@ -1,12 +1,20 @@
 import { Navigate, Route, Routes } from "react-router";
+import { useApp } from "../context/app-context";
 import HeroPage from "../pages/HeroPage";
 import HomePage from "../pages/HomePage";
+import LoginPage from "../pages/LoginPage";
+
+function Protected({ children }: { children: React.ReactNode }) {
+  const { user } = useApp();
+  return user ? children : <Navigate to="/login" replace />;
+}
 
 function AppRouter() {
   return (
     <Routes>
-      <Route path="/" element={<HomePage />} />
-      <Route path="/helden/:heroId" element={<HeroPage />} />
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/" element={<Protected><HomePage /></Protected>} />
+      <Route path="/held" element={<Protected><HeroPage /></Protected>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

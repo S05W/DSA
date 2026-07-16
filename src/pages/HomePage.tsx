@@ -1,45 +1,39 @@
-import Button from "react-bootstrap/Button";
-import Col from "react-bootstrap/Col";
-import Row from "react-bootstrap/Row";
-import HeroCard from "../components/hero/HeroCard";
+import { Link } from "react-router";
 import Header from "../components/layout/Header";
 import Sidebar from "../components/layout/Sidebar";
-import { heroes } from "../data/heroes";
+import { useApp } from "../context/app-context";
 
 function HomePage() {
+  const { hero, user } = useApp();
+  if (!hero) return null;
+  const freeAp = hero.adventurePoints - hero.spentAdventurePoints;
+
   return (
     <div className="app-shell">
       <Sidebar />
       <main className="app-main">
         <Header
-          eyebrow="Das Schwarze Auge"
-          title="Meine Helden"
-          subtitle="Deine Gruppe, ihre Geschichten und alle wichtigen Werte an einem Ort."
-          action={<Button className="dsa-primary-button" disabled>＋ Neuen Helden anlegen</Button>}
+          eyebrow={`Spielerprofil · ${user?.username ?? ""}`}
+          title="Mein Held"
+          subtitle="Ein persönlicher Heldenbogen mit automatisch gespeicherten Änderungen."
+          action={<Link to="/held" className="dsa-primary-button btn btn-primary">Heldenbogen öffnen</Link>}
         />
 
-        <section className="archive-intro">
-          <div>
-            <span className="archive-kicker">Heldenarchiv</span>
-            <h2>{heroes.length} Charaktere bereit für das nächste Abenteuer</h2>
+        <section className={`single-hero-showcase hero-banner-${hero.accent}`}>
+          <div className="single-hero-portrait">{hero.initials}</div>
+          <div className="single-hero-copy">
+            <span className="archive-kicker">{hero.profession}</span>
+            <h2>{hero.name}</h2>
+            <p>{hero.species} · {hero.culture} · {hero.experienceLevel}</p>
+            <blockquote>„{hero.quote}“</blockquote>
           </div>
-          <p>Wähle einen Helden aus, um Eigenschaften, Talente, Zauber und Ausrüstung zu öffnen.</p>
+          <div className="single-hero-stats">
+            <div><span>Lebensenergie</span><strong>{hero.lifePoints} / {hero.maxLifePoints}</strong></div>
+            <div><span>Astralenergie</span><strong>{hero.astralPoints} / {hero.maxAstralPoints}</strong></div>
+            <div><span>Freie AP</span><strong>{freeAp}</strong></div>
+          </div>
+          <Link className="single-hero-link" to="/held">Zum vollständigen Heldenbogen →</Link>
         </section>
-
-        <Row className="g-4 hero-grid">
-          {heroes.map((hero) => (
-            <Col key={hero.id} xs={12} md={6} xl={4}>
-              <HeroCard hero={hero} />
-            </Col>
-          ))}
-          <Col xs={12} md={6} xl={4}>
-            <button type="button" className="new-hero-tile" disabled>
-              <span className="new-hero-icon">＋</span>
-              <strong>Neuen Helden erschaffen</strong>
-              <span>Die Charaktererstellung folgt in einer späteren Version.</span>
-            </button>
-          </Col>
-        </Row>
       </main>
     </div>
   );
