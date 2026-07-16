@@ -1,24 +1,90 @@
-export type Hero = {
-  id: number;
-  name: string;
-  profession: string;
-  species: string;
-  adventurePoints: number;
-  lifePoints: number;
-  astralPoints: number;
-  description: string;
-};
+import type { Hero } from "../models/Hero";
 
 export const heroes: Hero[] = [
   {
     id: 1,
     name: "Aurelius von Gareth",
-    profession: "Gildenmagier",
+    title: "Adept der Kampfmagie",
+    profession: "Gildenmagier · Feldmagier",
     species: "Mensch",
+    culture: "Mittelreich",
+    experienceLevel: "Erfahren",
     adventurePoints: 1200,
+    spentAdventurePoints: 1184,
     lifePoints: 25,
+    maxLifePoints: 25,
     astralPoints: 36,
+    maxAstralPoints: 36,
+    fatePoints: 3,
+    maxFatePoints: 3,
     description:
-      "Ein Feldmagier aus Gareth mit Interesse an Kampfmagie, Heilkunst und Alchemie.",
+      "Ein disziplinierter Feldmagier aus Gareth, der offensive Zauberei mit Heilkunst und alchemistischem Wissen verbindet. Sein hölzerner Stab trägt einen eingelassenen Smaragd und begleitet ihn seit seiner Akademiezeit.",
+    quote: "Wissen schützt. Vorbereitung entscheidet.",
+    initials: "AvG",
+    accent: "emerald",
+    attributes: [
+      { short: "MU", name: "Mut", value: 14 },
+      { short: "KL", name: "Klugheit", value: 15 },
+      { short: "IN", name: "Intuition", value: 13 },
+      { short: "CH", name: "Charisma", value: 14 },
+      { short: "FF", name: "Fingerfertigkeit", value: 12 },
+      { short: "GE", name: "Gewandtheit", value: 11 },
+      { short: "KO", name: "Konstitution", value: 12 },
+      { short: "KK", name: "Körperkraft", value: 10 },
+    ],
+    talents: [
+      { name: "Magiekunde", category: "Wissen", value: 12 },
+      { name: "Heilkunde Wunden", category: "Wissen", value: 8 },
+      { name: "Alchimie", category: "Wissen", value: 10 },
+      { name: "Sinnesschärfe", category: "Körper", value: 7 },
+      { name: "Menschenkenntnis", category: "Gesellschaft", value: 8 },
+    ],
+    spells: [
+      { name: "Ignifaxius", check: "MU / KL / CH", value: 10, cost: "8 AsP" },
+      { name: "Fulminictus", check: "MU / IN / KO", value: 10, cost: "8 AsP" },
+      { name: "Balsam Salabunde", check: "KL / IN / FF", value: 9, cost: "variabel" },
+      { name: "Blitz dich find", check: "MU / IN / CH", value: 8, cost: "4 AsP" },
+    ],
+    equipment: ["Magierstab", "Zauberbuch", "Alchimistenbesteck", "Robuste Reisekleidung"],
+  },
+  {
+    id: 2,
+    name: "Ragna Sturmtochter",
+    title: "Schildmaid aus Thorwal",
+    profession: "Kriegerin",
+    species: "Mensch",
+    culture: "Thorwal",
+    experienceLevel: "Erfahren",
+    adventurePoints: 1200,
+    spentAdventurePoints: 1170,
+    lifePoints: 34,
+    maxLifePoints: 34,
+    astralPoints: 0,
+    maxAstralPoints: 0,
+    fatePoints: 3,
+    maxFatePoints: 3,
+    description:
+      "Eine unbeirrbare Schildmaid, die ihre Gefährten mit Axt, Mut und trockenem Humor durch jede Gefahr führt.",
+    quote: "Ein guter Plan beginnt mit einem festen Stand.",
+    initials: "RS",
+    accent: "ruby",
+    attributes: [
+      { short: "MU", name: "Mut", value: 15 },
+      { short: "KL", name: "Klugheit", value: 11 },
+      { short: "IN", name: "Intuition", value: 13 },
+      { short: "CH", name: "Charisma", value: 12 },
+      { short: "FF", name: "Fingerfertigkeit", value: 11 },
+      { short: "GE", name: "Gewandtheit", value: 13 },
+      { short: "KO", name: "Konstitution", value: 15 },
+      { short: "KK", name: "Körperkraft", value: 15 },
+    ],
+    talents: [
+      { name: "Körperbeherrschung", category: "Körper", value: 11 },
+      { name: "Kraftakt", category: "Körper", value: 12 },
+      { name: "Einschüchtern", category: "Gesellschaft", value: 9 },
+      { name: "Fischen & Angeln", category: "Natur", value: 8 },
+    ],
+    spells: [],
+    equipment: ["Skraja", "Rundschild", "Kettenhemd", "Trinkhorn"],
   },
 ];

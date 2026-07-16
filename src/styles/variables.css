@@ -1,0 +1,15 @@
+:root {
+  --ink: #26231f;
+  --muted: #746e65;
+  --paper: #f5f0e6;
+  --paper-deep: #e9e0cf;
+  --surface: #fffdf8;
+  --line: #d9cfbd;
+  --forest: #20382f;
+  --forest-light: #315246;
+  --gold: #b58a48;
+  --ruby: #7b342e;
+  --emerald: #315d4b;
+  --shadow: 0 18px 45px rgba(53, 43, 29, 0.11);
+  --sidebar-width: 258px;
+}

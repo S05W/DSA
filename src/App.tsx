@@ -1,16 +1,7 @@
-import { Route, Routes } from "react-router";
-import "./App.css";
-
-import HomePage from "./pages/HomePage";
-import HeroPage from "./pages/HeroPage";
+import AppRouter from "./router/AppRouter";
 
 function App() {
-  return (
-    <Routes>
-      <Route path="/" element={<HomePage />} />
-      <Route path="/helden/:heroId" element={<HeroPage />} />
-    </Routes>
-  );
+  return <AppRouter />;
 }
 
 export default App;
