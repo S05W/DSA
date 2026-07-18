@@ -28,12 +28,15 @@ function Sidebar({ heroName }: SidebarProps) {
           <NavLink to="/wuerfel" className={({ isActive }) => `sidebar-link${isActive ? " active" : ""}`}>
             <span className="sidebar-icon">W</span>Würfel
           </NavLink>
+          {user?.role === "master" && <NavLink to="/meister" className={({ isActive }) => `sidebar-link${isActive ? " active" : ""}`}>
+            <span className="sidebar-icon">M</span>Meisteransicht
+          </NavLink>}
           {heroName && <div className="sidebar-context"><span>Geöffneter Held</span><strong>{heroName}</strong></div>}
         </nav>
       </div>
 
       <div className="sidebar-footer">
-        <div className="sidebar-user"><span>Spieler</span><strong>{user?.username}</strong></div>
+        <div className="sidebar-user"><span>{user?.role === "master" ? "Meister" : "Spieler"}</span><strong>{user?.username}</strong></div>
         <button type="button" className="sidebar-logout" onClick={handleLogout}>Abmelden</button>
         <small><span className="status-dot" />Automatisch gespeichert</small>
       </div>

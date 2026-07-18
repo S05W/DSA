@@ -20,6 +20,7 @@ database.exec(`
     id TEXT PRIMARY KEY,
     username TEXT NOT NULL UNIQUE COLLATE NOCASE,
     password_hash TEXT NOT NULL,
+    role TEXT NOT NULL DEFAULT 'player',
     created_at TEXT NOT NULL
   );
   CREATE TABLE IF NOT EXISTS sessions (
@@ -29,12 +30,18 @@ database.exec(`
   );
 `);
 
+const userColumns = database.prepare("PRAGMA table_info(users)").all();
+if (!userColumns.some((column) => column.name === "role")) {
+  database.exec("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'player'");
+}
+
 function createHeroesTable() {
   database.exec(`
     CREATE TABLE IF NOT EXISTS heroes (
       hero_id TEXT NOT NULL,
       user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
       data TEXT NOT NULL,
+      active INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL,
       PRIMARY KEY (user_id, hero_id)
@@ -53,13 +60,13 @@ if (!heroColumns.length) {
     database.exec("ALTER TABLE heroes RENAME TO heroes_legacy");
     createHeroesTable();
     const migrateHero = database.prepare(`
-      INSERT INTO heroes (hero_id, user_id, data, created_at, updated_at) VALUES (?, ?, ?, ?, ?)
+      INSERT INTO heroes (hero_id, user_id, data, active, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)
     `);
     for (const row of previousHeroes) {
       const hero = JSON.parse(row.data);
       const heroId = String(hero.id ?? randomUUID());
       const migrated = { ...hero, id: heroId, ownerId: row.user_id };
-      migrateHero.run(heroId, row.user_id, JSON.stringify(migrated), row.updated_at, row.updated_at);
+      migrateHero.run(heroId, row.user_id, JSON.stringify(migrated), migrated.sessionActive ? 1 : 0, row.updated_at, row.updated_at);
     }
     database.exec("DROP TABLE heroes_legacy");
     database.exec("COMMIT");
@@ -69,10 +76,15 @@ if (!heroColumns.length) {
   }
 }
 
+const currentHeroColumns = database.prepare("PRAGMA table_info(heroes)").all();
+if (!currentHeroColumns.some((column) => column.name === "active")) {
+  database.exec("ALTER TABLE heroes ADD COLUMN active INTEGER NOT NULL DEFAULT 0");
+}
+
 const queries = {
-  userByName: database.prepare("SELECT id, username, password_hash FROM users WHERE username = ? COLLATE NOCASE"),
+  userByName: database.prepare("SELECT id, username, password_hash, role FROM users WHERE username = ? COLLATE NOCASE"),
   userBySession: database.prepare(`
-    SELECT users.id, users.username
+    SELECT users.id, users.username, users.role
     FROM sessions JOIN users ON users.id = sessions.user_id
     WHERE sessions.token_hash = ? AND sessions.expires_at > ?
   `),
@@ -83,12 +95,24 @@ const queries = {
   heroesByUser: database.prepare("SELECT data FROM heroes WHERE user_id = ? ORDER BY created_at ASC"),
   heroById: database.prepare("SELECT data FROM heroes WHERE user_id = ? AND hero_id = ?"),
   insertHero: database.prepare(`
-    INSERT INTO heroes (hero_id, user_id, data, created_at, updated_at) VALUES (?, ?, ?, ?, ?)
+    INSERT INTO heroes (hero_id, user_id, data, active, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)
   `),
   saveHero: database.prepare(`
-    UPDATE heroes SET data = ?, updated_at = ? WHERE user_id = ? AND hero_id = ?
+    UPDATE heroes SET data = ?, active = ?, updated_at = ? WHERE user_id = ? AND hero_id = ?
   `),
   deleteHero: database.prepare("DELETE FROM heroes WHERE user_id = ? AND hero_id = ?"),
+  activeHeroesForMaster: database.prepare(`
+    SELECT heroes.data, heroes.updated_at, users.username
+    FROM heroes JOIN users ON users.id = heroes.user_id
+    WHERE heroes.active = 1
+    ORDER BY heroes.updated_at DESC
+  `),
+  heroForMaster: database.prepare(`
+    SELECT heroes.data, heroes.updated_at, users.username
+    FROM heroes JOIN users ON users.id = heroes.user_id
+    WHERE heroes.hero_id = ?
+  `),
+  saveHeroForMaster: database.prepare("UPDATE heroes SET data = ?, updated_at = ? WHERE hero_id = ?"),
 };
 
 function json(response, status, body, extraHeaders = {}) {
@@ -159,6 +183,16 @@ function requireUser(request, response) {
   return user;
 }
 
+function requireMaster(request, response) {
+  const user = requireUser(request, response);
+  if (!user) return null;
+  if (user.role !== "master") {
+    json(response, 403, { error: "Dieser Bereich ist nur für den Meister zugänglich." });
+    return null;
+  }
+  return user;
+}
+
 function validSameOrigin(request) {
   const origin = request.headers.origin;
   if (!origin) return true;
@@ -189,7 +223,7 @@ const server = createServer(async (request, response) => {
       const id = randomUUID();
       queries.insertUser.run(id, normalized, await passwordHash(password), new Date().toISOString());
       const token = createSession(id);
-      return json(response, 201, { user: { id, username: normalized } }, { "Set-Cookie": sessionCookie(token) });
+      return json(response, 201, { user: { id, username: normalized, role: "player" } }, { "Set-Cookie": sessionCookie(token) });
     }
     if (request.method === "POST" && url.pathname === "/api/login") {
       const { username, password } = await readBody(request);
@@ -198,12 +232,64 @@ const server = createServer(async (request, response) => {
         return json(response, 401, { error: "Benutzername oder Passwort ist nicht korrekt." });
       }
       const token = createSession(account.id);
-      return json(response, 200, { user: { id: account.id, username: account.username } }, { "Set-Cookie": sessionCookie(token) });
+      return json(response, 200, { user: { id: account.id, username: account.username, role: account.role } }, { "Set-Cookie": sessionCookie(token) });
     }
     if (request.method === "POST" && url.pathname === "/api/logout") {
       const token = parseCookies(request).dsa_session;
       if (token) queries.deleteSession.run(tokenHash(token));
       return json(response, 200, { ok: true }, { "Set-Cookie": sessionCookie("", 0) });
+    }
+    if (request.method === "GET" && url.pathname === "/api/master/heroes") {
+      if (!requireMaster(request, response)) return;
+      const heroes = queries.activeHeroesForMaster.all().map((row) => ({ hero: JSON.parse(row.data), username: row.username, updatedAt: row.updated_at }));
+      return json(response, 200, { heroes });
+    }
+    const masterHeroRoute = url.pathname.match(/^\/api\/master\/heroes\/([^/]+)$/);
+    if (request.method === "GET" && masterHeroRoute) {
+      if (!requireMaster(request, response)) return;
+      const row = queries.heroForMaster.get(decodeURIComponent(masterHeroRoute[1]));
+      if (!row) return json(response, 404, { error: "Held nicht gefunden." });
+      return json(response, 200, { hero: JSON.parse(row.data), username: row.username, updatedAt: row.updated_at });
+    }
+    const masterStatusRoute = url.pathname.match(/^\/api\/master\/heroes\/([^/]+)\/statuses$/);
+    if (request.method === "POST" && masterStatusRoute) {
+      if (!requireMaster(request, response)) return;
+      const heroId = decodeURIComponent(masterStatusRoute[1]);
+      const row = queries.heroForMaster.get(heroId);
+      if (!row) return json(response, 404, { error: "Held nicht gefunden." });
+      const input = await readBody(request);
+      const name = typeof input.name === "string" ? input.name.trim() : "";
+      if (!name || name.length > 80) return json(response, 400, { error: "Der Status benötigt einen Namen mit höchstens 80 Zeichen." });
+      const hero = JSON.parse(row.data);
+      const now = new Date().toISOString();
+      const status = {
+        id: randomUUID(), name, level: Math.max(1, Math.min(99, Number(input.level) || 1)),
+        cause: typeof input.cause === "string" ? input.cause.trim().slice(0, 200) : "",
+        duration: typeof input.duration === "string" ? input.duration.trim().slice(0, 200) : "",
+        notes: typeof input.notes === "string" ? input.notes.trim().slice(0, 500) : "", source: "master",
+      };
+      const body = hero.body ?? { parts: [], statuses: [], equipped: {}, history: [] };
+      const history = [...(body.history ?? []), { id: randomUUID(), timestamp: now, actor: "master", message: `Status „${status.name}“ (Stufe ${status.level}) vom Meister hinzugefügt.` }].slice(-100);
+      const updatedHero = { ...hero, body: { ...body, statuses: [...(body.statuses ?? []), status], history } };
+      queries.saveHeroForMaster.run(JSON.stringify(updatedHero), now, heroId);
+      return json(response, 201, { hero: updatedHero, status });
+    }
+    const masterStatusDeleteRoute = url.pathname.match(/^\/api\/master\/heroes\/([^/]+)\/statuses\/([^/]+)$/);
+    if (request.method === "DELETE" && masterStatusDeleteRoute) {
+      if (!requireMaster(request, response)) return;
+      const heroId = decodeURIComponent(masterStatusDeleteRoute[1]);
+      const statusId = decodeURIComponent(masterStatusDeleteRoute[2]);
+      const row = queries.heroForMaster.get(heroId);
+      if (!row) return json(response, 404, { error: "Held nicht gefunden." });
+      const hero = JSON.parse(row.data);
+      const body = hero.body ?? { parts: [], statuses: [], equipped: {}, history: [] };
+      const status = (body.statuses ?? []).find((entry) => entry.id === statusId && entry.source === "master");
+      if (!status) return json(response, 404, { error: "Meister-Status nicht gefunden." });
+      const now = new Date().toISOString();
+      const history = [...(body.history ?? []), { id: randomUUID(), timestamp: now, actor: "master", message: `Status „${status.name}“ vom Meister entfernt.` }].slice(-100);
+      const updatedHero = { ...hero, body: { ...body, statuses: body.statuses.filter((entry) => entry.id !== statusId), history } };
+      queries.saveHeroForMaster.run(JSON.stringify(updatedHero), now, heroId);
+      return json(response, 200, { hero: updatedHero, ok: true });
     }
     if (request.method === "GET" && url.pathname === "/api/heroes") {
       const user = requireUser(request, response);
@@ -222,7 +308,7 @@ const server = createServer(async (request, response) => {
       const heroId = randomUUID();
       const now = new Date().toISOString();
       const safeHero = { ...hero, id: heroId, ownerId: user.id, name: hero.name.trim() };
-      queries.insertHero.run(heroId, user.id, JSON.stringify(safeHero), now, now);
+      queries.insertHero.run(heroId, user.id, JSON.stringify(safeHero), safeHero.sessionActive ? 1 : 0, now, now);
       return json(response, 201, { hero: safeHero });
     }
     const heroRoute = url.pathname.match(/^\/api\/heroes\/([^/]+)$/);
@@ -237,7 +323,7 @@ const server = createServer(async (request, response) => {
         return json(response, 400, { error: "Der Heldenname benötigt 1–80 Zeichen." });
       }
       const safeHero = { ...hero, id: heroId, ownerId: user.id, name: hero.name.trim() };
-      queries.saveHero.run(JSON.stringify(safeHero), new Date().toISOString(), user.id, heroId);
+      queries.saveHero.run(JSON.stringify(safeHero), safeHero.sessionActive ? 1 : 0, new Date().toISOString(), user.id, heroId);
       return json(response, 200, { hero: safeHero });
     }
     if (request.method === "DELETE" && heroRoute) {

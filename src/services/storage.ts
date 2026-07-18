@@ -1,5 +1,5 @@
 import type { Hero } from "../models/Hero";
-import type { SessionUser } from "../models/User";
+import type { MasterHeroRecord, SessionUser } from "../models/User";
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const response = await fetch(`/api${path}`, {
@@ -65,5 +65,24 @@ export const storage = {
 
   async deleteHero(heroId: string): Promise<void> {
     await request<{ ok: true }>(`/heroes/${encodeURIComponent(heroId)}`, { method: "DELETE" });
+  },
+
+  async getActiveMasterHeroes(): Promise<MasterHeroRecord[]> {
+    const result = await request<{ heroes: MasterHeroRecord[] }>("/master/heroes");
+    return result.heroes;
+  },
+
+  async getMasterHero(heroId: string): Promise<MasterHeroRecord> {
+    return request<MasterHeroRecord>(`/master/heroes/${encodeURIComponent(heroId)}`);
+  },
+
+  async addMasterStatus(heroId: string, status: { name: string; level: number; cause: string; duration: string; notes: string }): Promise<Hero> {
+    const result = await request<{ hero: Hero }>(`/master/heroes/${encodeURIComponent(heroId)}/statuses`, { method: "POST", body: JSON.stringify(status) });
+    return result.hero;
+  },
+
+  async removeMasterStatus(heroId: string, statusId: string): Promise<Hero> {
+    const result = await request<{ hero: Hero }>(`/master/heroes/${encodeURIComponent(heroId)}/statuses/${encodeURIComponent(statusId)}`, { method: "DELETE" });
+    return result.hero;
   },
 };

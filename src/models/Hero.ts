@@ -132,6 +132,7 @@ export interface BodyState {
 export interface Hero {
   id: string;
   ownerId: string;
+  sessionActive: boolean;
   name: string;
   title?: string;
   profession: string;

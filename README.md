@@ -16,6 +16,25 @@ Talent- und Zauberproben können direkt als 3W20-Probe ausgeführt werden. Die A
 
 Der Kampf-Tab verwaltet AT, PA, Ausweichen, Initiative, Geschwindigkeit und Rüstungsschutz. Kampftechniken sowie Sprachen und Schriften stehen zusätzlich unter den Talenten zur Verfügung. Die Übersicht enthält einen Geldbeutel für Dukaten, Silbertaler und Heller. Zaubertricks, magische Sonderfertigkeiten sowie ein eigener Bereich für Resistenzen und Immunitäten ergänzen den Heldenbogen.
 
+## Meisteransicht
+
+Spieler können einen Helden im Heldenbogen als „In der Sitzung“ markieren. Meister sehen unter `/meister` alle aktiven Helden mit Spielername, LeP, AsP und Anzahl der Statuseffekte. Ein Klick öffnet den vollständigen Heldenbogen schreibgeschützt. Nur im Körperbereich darf der Meister eigene Statuseffekte setzen oder wieder entfernen. Diese erscheinen beim Spieler mit einer roten Meistermarkierung und werden innerhalb weniger Sekunden synchronisiert.
+
+Neue Benutzer sind immer normale Spieler. Die Meisterrolle wird ausschließlich lokal auf dem Server vergeben:
+
+```bash
+cd ~/apps/DSA
+npm run set-role -- Simon master
+```
+
+Zum Zurücksetzen auf einen Spieler:
+
+```bash
+npm run set-role -- Simon player
+```
+
+Nach einer Rollenänderung muss sich der Benutzer einmal ab- und wieder anmelden. Die spätere Karten- und Fernseheransicht ist als nächste Ausbaustufe in der Meisterübersicht vorgesehen.
+
 ## Voraussetzungen
 
 - Node.js 24

@@ -27,6 +27,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return () => { active = false; };
   }, []);
 
+  useEffect(() => {
+    if (!user) return;
+    let active = true;
+    let refreshing = false;
+    async function refreshHeroes() {
+      if (refreshing) return;
+      refreshing = true;
+      try {
+        await saveQueue.current;
+        const loadedHeroes = (await storage.getHeroes()).map(normalizeHero);
+        if (active) setHeroes(loadedHeroes);
+      } catch {
+        // Bei einem kurzen Netzwerkausfall bleibt der letzte lokale Stand sichtbar.
+      } finally {
+        refreshing = false;
+      }
+    }
+    const interval = window.setInterval(() => { void refreshHeroes(); }, 5000);
+    return () => { active = false; window.clearInterval(interval); };
+  }, [user]);
+
   const value = useMemo<AppContextValue>(() => ({
     user,
     heroes,

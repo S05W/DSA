@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "server": "node server/server.mjs",
+    "set-role": "node server/set-role.mjs",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview"

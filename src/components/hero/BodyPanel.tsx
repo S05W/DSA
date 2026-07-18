@@ -174,7 +174,7 @@ function damageSeverity(damage: number, maximum: number) {
   return "hurt";
 }
 
-function BodyFigure({ hero }: { hero: Hero }) {
+export function BodyFigure({ hero }: { hero: Hero }) {
   const severity = (id: BodyPartId) => {
     const part = hero.body.parts.find((candidate) => candidate.id === id)!;
     return damageSeverity(part.damage, part.maxDamage);

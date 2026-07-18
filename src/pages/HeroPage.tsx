@@ -78,9 +78,12 @@ function HeroPage() {
       <main className="app-main hero-page">
         <div className="hero-page-toolbar">
           <Link className="back-link" to="/">← Zurück zur Übersicht</Link>
-          <div className="mode-switch" role="group" aria-label="Modus des Heldenbogens">
-            <button type="button" className={!setup ? "active" : ""} onClick={() => setMode("play")}>Spielmodus</button>
-            <button type="button" className={setup ? "active" : ""} onClick={() => setMode("setup")}>Setup-Modus</button>
+          <div className="hero-toolbar-actions">
+            <button type="button" className={`session-toggle${hero.sessionActive ? " active" : ""}`} onClick={() => patchHero((current) => ({ ...current, sessionActive: !current.sessionActive }))}><span className="session-toggle-dot" />{hero.sessionActive ? "In der Sitzung" : "Nicht in der Sitzung"}</button>
+            <div className="mode-switch" role="group" aria-label="Modus des Heldenbogens">
+              <button type="button" className={!setup ? "active" : ""} onClick={() => setMode("play")}>Spielmodus</button>
+              <button type="button" className={setup ? "active" : ""} onClick={() => setMode("setup")}>Setup-Modus</button>
+            </div>
           </div>
         </div>
         <p className={`mode-note mode-note-${mode}`}>{setup ? "Setup-Modus: Grunddaten, Werte, Talente, Zauber, Ausrüstung und Belastungsgrenzen können verändert werden." : "Spielmodus: Laufende Ressourcen, Körperschäden, Statuseffekte und angelegte Ausrüstung können verändert werden."}</p>

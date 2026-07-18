@@ -19,6 +19,7 @@ export function createDefaultHero(ownerId: string, identity: Partial<HeroIdentit
   return {
     id: createId(),
     ownerId,
+    sessionActive: false,
     name,
     title: "",
     profession: identity.profession?.trim() || "Noch nicht festgelegt",
