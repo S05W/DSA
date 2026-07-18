@@ -1,6 +1,6 @@
 # DSA-Heldenbogen
 
-React-Frontend mit zentraler Node.js-API und SQLite-Datenbank. Jeder Benutzer besitzt genau einen Helden. Anmeldung und Heldendaten werden auf dem Server gespeichert.
+React-Frontend mit zentraler Node.js-API und SQLite-Datenbank. Jeder Benutzer kann mehrere Helden anlegen, öffnen und bearbeiten. Anmeldung und Heldendaten werden auf dem Server gespeichert.
 
 ## Voraussetzungen
 

@@ -4,11 +4,12 @@ import type { SessionUser } from "../models/User";
 
 export interface AppContextValue {
   user: SessionUser | null;
-  hero: Hero | null;
+  heroes: Hero[];
   login: (username: string, password: string) => Promise<void>;
   register: (username: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
-  updateHero: (updater: (hero: Hero) => Hero) => void;
+  createHero: (hero: Hero) => Promise<Hero>;
+  updateHero: (heroId: string, updater: (hero: Hero) => Hero) => void;
 }
 
 export const AppContext = createContext<AppContextValue | null>(null);

@@ -42,13 +42,21 @@ export const storage = {
     return result.user;
   },
 
-  async getHero(): Promise<Hero | null> {
-    const result = await request<{ hero: Hero | null }>("/hero");
+  async getHeroes(): Promise<Hero[]> {
+    const result = await request<{ heroes: Hero[] }>("/heroes");
+    return result.heroes;
+  },
+
+  async createHero(hero: Hero): Promise<Hero> {
+    const result = await request<{ hero: Hero }>("/heroes", {
+      method: "POST",
+      body: JSON.stringify(hero),
+    });
     return result.hero;
   },
 
   async saveHero(hero: Hero): Promise<Hero> {
-    const result = await request<{ hero: Hero }>("/hero", {
+    const result = await request<{ hero: Hero }>(`/heroes/${encodeURIComponent(hero.id)}`, {
       method: "PUT",
       body: JSON.stringify(hero),
     });

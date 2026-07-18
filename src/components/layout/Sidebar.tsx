@@ -23,7 +23,7 @@ function Sidebar({ heroName }: SidebarProps) {
 
         <nav className="sidebar-nav" aria-label="Hauptnavigation">
           <NavLink to="/" end className={({ isActive }) => `sidebar-link${isActive ? " active" : ""}`}>
-            <span className="sidebar-icon">◆</span>Mein Held
+            <span className="sidebar-icon">◆</span>Meine Helden
           </NavLink>
           {heroName && <div className="sidebar-context"><span>Geöffneter Held</span><strong>{heroName}</strong></div>}
         </nav>

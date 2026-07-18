@@ -27,12 +27,47 @@ database.exec(`
     user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     expires_at INTEGER NOT NULL
   );
-  CREATE TABLE IF NOT EXISTS heroes (
-    user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
-    data TEXT NOT NULL,
-    updated_at TEXT NOT NULL
-  );
 `);
+
+function createHeroesTable() {
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS heroes (
+      hero_id TEXT NOT NULL,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      data TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      PRIMARY KEY (user_id, hero_id)
+    );
+    CREATE INDEX IF NOT EXISTS heroes_user_updated ON heroes(user_id, updated_at DESC);
+  `);
+}
+
+const heroColumns = database.prepare("PRAGMA table_info(heroes)").all();
+if (!heroColumns.length) {
+  createHeroesTable();
+} else if (!heroColumns.some((column) => column.name === "hero_id")) {
+  database.exec("BEGIN IMMEDIATE");
+  try {
+    const previousHeroes = database.prepare("SELECT user_id, data, updated_at FROM heroes").all();
+    database.exec("ALTER TABLE heroes RENAME TO heroes_legacy");
+    createHeroesTable();
+    const migrateHero = database.prepare(`
+      INSERT INTO heroes (hero_id, user_id, data, created_at, updated_at) VALUES (?, ?, ?, ?, ?)
+    `);
+    for (const row of previousHeroes) {
+      const hero = JSON.parse(row.data);
+      const heroId = String(hero.id ?? randomUUID());
+      const migrated = { ...hero, id: heroId, ownerId: row.user_id };
+      migrateHero.run(heroId, row.user_id, JSON.stringify(migrated), row.updated_at, row.updated_at);
+    }
+    database.exec("DROP TABLE heroes_legacy");
+    database.exec("COMMIT");
+  } catch (error) {
+    database.exec("ROLLBACK");
+    throw error;
+  }
+}
 
 const queries = {
   userByName: database.prepare("SELECT id, username, password_hash FROM users WHERE username = ? COLLATE NOCASE"),
@@ -45,10 +80,13 @@ const queries = {
   insertSession: database.prepare("INSERT INTO sessions (token_hash, user_id, expires_at) VALUES (?, ?, ?)"),
   deleteSession: database.prepare("DELETE FROM sessions WHERE token_hash = ?"),
   deleteExpiredSessions: database.prepare("DELETE FROM sessions WHERE expires_at <= ?"),
-  heroByUser: database.prepare("SELECT data FROM heroes WHERE user_id = ?"),
+  heroesByUser: database.prepare("SELECT data FROM heroes WHERE user_id = ? ORDER BY created_at ASC"),
+  heroById: database.prepare("SELECT data FROM heroes WHERE user_id = ? AND hero_id = ?"),
+  insertHero: database.prepare(`
+    INSERT INTO heroes (hero_id, user_id, data, created_at, updated_at) VALUES (?, ?, ?, ?, ?)
+  `),
   saveHero: database.prepare(`
-    INSERT INTO heroes (user_id, data, updated_at) VALUES (?, ?, ?)
-    ON CONFLICT(user_id) DO UPDATE SET data = excluded.data, updated_at = excluded.updated_at
+    UPDATE heroes SET data = ?, updated_at = ? WHERE user_id = ? AND hero_id = ?
   `),
 };
 
@@ -166,19 +204,39 @@ const server = createServer(async (request, response) => {
       if (token) queries.deleteSession.run(tokenHash(token));
       return json(response, 200, { ok: true }, { "Set-Cookie": sessionCookie("", 0) });
     }
-    if (request.method === "GET" && url.pathname === "/api/hero") {
+    if (request.method === "GET" && url.pathname === "/api/heroes") {
       const user = requireUser(request, response);
       if (!user) return;
-      const row = queries.heroByUser.get(user.id);
-      return json(response, 200, { hero: row ? JSON.parse(row.data) : null });
+      const heroes = queries.heroesByUser.all(user.id).map((row) => JSON.parse(row.data));
+      return json(response, 200, { heroes });
     }
-    if (request.method === "PUT" && url.pathname === "/api/hero") {
+    if (request.method === "POST" && url.pathname === "/api/heroes") {
       const user = requireUser(request, response);
       if (!user) return;
       const hero = await readBody(request);
       if (!hero || typeof hero !== "object" || Array.isArray(hero)) return json(response, 400, { error: "Ungültige Heldendaten." });
-      const safeHero = { ...hero, ownerId: user.id };
-      queries.saveHero.run(user.id, JSON.stringify(safeHero), new Date().toISOString());
+      if (typeof hero.name !== "string" || !hero.name.trim() || hero.name.trim().length > 80) {
+        return json(response, 400, { error: "Der Heldenname benötigt 1–80 Zeichen." });
+      }
+      const heroId = randomUUID();
+      const now = new Date().toISOString();
+      const safeHero = { ...hero, id: heroId, ownerId: user.id, name: hero.name.trim() };
+      queries.insertHero.run(heroId, user.id, JSON.stringify(safeHero), now, now);
+      return json(response, 201, { hero: safeHero });
+    }
+    const heroRoute = url.pathname.match(/^\/api\/heroes\/([^/]+)$/);
+    if (request.method === "PUT" && heroRoute) {
+      const user = requireUser(request, response);
+      if (!user) return;
+      const heroId = decodeURIComponent(heroRoute[1]);
+      if (!queries.heroById.get(user.id, heroId)) return json(response, 404, { error: "Held nicht gefunden." });
+      const hero = await readBody(request);
+      if (!hero || typeof hero !== "object" || Array.isArray(hero)) return json(response, 400, { error: "Ungültige Heldendaten." });
+      if (typeof hero.name !== "string" || !hero.name.trim() || hero.name.trim().length > 80) {
+        return json(response, 400, { error: "Der Heldenname benötigt 1–80 Zeichen." });
+      }
+      const safeHero = { ...hero, id: heroId, ownerId: user.id, name: hero.name.trim() };
+      queries.saveHero.run(JSON.stringify(safeHero), new Date().toISOString(), user.id, heroId);
       return json(response, 200, { hero: safeHero });
     }
     return json(response, 404, { error: "Nicht gefunden." });

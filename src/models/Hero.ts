@@ -32,7 +32,7 @@ export interface EquipmentItem {
 }
 
 export interface Hero {
-  id: number;
+  id: string;
   ownerId: string;
   name: string;
   title?: string;

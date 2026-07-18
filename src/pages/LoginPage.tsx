@@ -47,8 +47,8 @@ function LoginPage() {
           <h2>{mode === "login" ? "Willkommen zurück" : "Profil erstellen"}</h2>
           <p className="login-hint">
             {mode === "login"
-              ? "Melde dich an, um deinen Helden zu öffnen."
-              : "Jedes Profil besitzt genau einen Helden."}
+              ? "Melde dich an, um dein Heldenarchiv zu öffnen."
+              : "In jedem Profil kannst du mehrere Helden verwalten."}
           </p>
 
           <Form onSubmit={submit}>

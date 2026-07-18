@@ -1,31 +1,24 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { Hero } from "../models/Hero";
 import type { SessionUser } from "../models/User";
-import { createDefaultHero } from "../data/heroes";
 import { storage } from "../services/storage";
 import { AppContext, type AppContextValue } from "./app-context";
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<SessionUser | null>(null);
-  const [hero, setHero] = useState<Hero | null>(null);
+  const [heroes, setHeroes] = useState<Hero[]>([]);
   const [ready, setReady] = useState(false);
   const saveQueue = useRef(Promise.resolve());
-
-  async function loadHero(session: SessionUser): Promise<Hero> {
-    const existing = await storage.getHero();
-    if (existing) return existing;
-    return storage.saveHero(createDefaultHero(session.id));
-  }
 
   useEffect(() => {
     let active = true;
     void storage.getSession()
       .then(async (session) => {
         if (!active || !session) return;
-        const loadedHero = await loadHero(session);
+        const loadedHeroes = await storage.getHeroes();
         if (active) {
           setUser(session);
-          setHero(loadedHero);
+          setHeroes(loadedHeroes);
         }
       })
       .catch(() => undefined)
@@ -35,36 +28,41 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<AppContextValue>(() => ({
     user,
-    hero,
+    heroes,
     async login(username, password) {
       const session = await storage.login(username, password);
-      const loadedHero = await loadHero(session);
-      setHero(loadedHero);
+      const loadedHeroes = await storage.getHeroes();
+      setHeroes(loadedHeroes);
       setUser(session);
     },
     async register(username, password) {
       const session = await storage.register(username, password);
-      const loadedHero = await loadHero(session);
-      setHero(loadedHero);
+      const loadedHeroes = await storage.getHeroes();
+      setHeroes(loadedHeroes);
       setUser(session);
     },
     async logout() {
       await storage.logout();
       setUser(null);
-      setHero(null);
+      setHeroes([]);
     },
-    updateHero(updater) {
-      setHero((current) => {
-        if (!current) return current;
-        const updated = updater(current);
+    async createHero(hero) {
+      const created = await storage.createHero(hero);
+      setHeroes((current) => [...current, created]);
+      return created;
+    },
+    updateHero(heroId, updater) {
+      setHeroes((current) => current.map((hero) => {
+        if (hero.id !== heroId) return hero;
+        const updated = updater(hero);
         saveQueue.current = saveQueue.current
           .then(() => storage.saveHero(updated))
           .then(() => undefined)
           .catch((error) => { console.error("Held konnte nicht gespeichert werden:", error); });
         return updated;
-      });
+      }));
     },
-  }), [hero, user]);
+  }), [heroes, user]);
 
   if (!ready) return null;
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

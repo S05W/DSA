@@ -10,6 +10,14 @@
 .new-hero-tile strong { color: var(--ink); font-family: Georgia, serif; font-size: 1.15rem; }
 .new-hero-tile span:last-child { max-width: 250px; font-size: .9rem; }
 .new-hero-icon { width: 52px; height: 52px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 50%; font-size: 1.5rem; background: var(--surface); }
+.hero-card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 22px; }
+.new-hero-form { margin: 4px 0 32px; }
+.new-hero-form-grid { margin-bottom: 22px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.new-hero-form-grid > :first-child { grid-column: 1 / -1; }
+.form-error { margin: 0 0 16px; padding: 11px 13px; border-radius: 9px; color: #722c27; background: #f5dfdc; }
+.empty-heroes { min-height: 360px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+.empty-heroes h2 { margin: 18px 0 8px; font-family: Georgia, serif; }
+.empty-heroes p { margin: 0 0 22px; color: var(--muted); }
 .back-link { display: inline-block; margin-bottom: 22px; color: var(--muted); text-decoration: none; font-weight: 700; }
 .back-link:hover { color: var(--ruby); }
 .hero-banner { position: relative; overflow: hidden; min-height: 245px; padding: 38px; display: grid; grid-template-columns: auto 1fr minmax(220px, 360px); align-items: center; gap: 30px; border-radius: 22px; color: #fff; box-shadow: var(--shadow); }
@@ -142,4 +150,4 @@
 
 @media (max-width: 1250px) { .talent-category-grid { grid-template-columns: repeat(3, minmax(210px, 1fr)); } }
 @media (max-width: 900px) { .login-page { grid-template-columns: 1fr; } .login-visual { padding: 54px 28px; } .single-hero-showcase { grid-template-columns: auto 1fr; } .single-hero-stats { grid-column: 1 / -1; grid-template-columns: repeat(3, 1fr); } .single-hero-link { grid-column: 1 / -1; } .talent-category-grid { grid-template-columns: repeat(2, minmax(200px, 1fr)); } .equipment-form { grid-template-columns: 1fr 100px; } .equipment-form > :nth-child(3) { grid-column: 1 / -1; } .equipment-editor-row { grid-template-columns: 1fr 70px; } .equipment-notes { grid-column: 1 / -1; } }
-@media (max-width: 600px) { .login-panel { padding: 20px; } .login-card { padding: 26px 20px; } .single-hero-showcase { grid-template-columns: 1fr; text-align: center; } .single-hero-portrait { margin: auto; } .single-hero-stats { grid-template-columns: 1fr; } .talent-category-grid { grid-template-columns: 1fr; } .equipment-form { grid-template-columns: 1fr; } .equipment-form > :nth-child(3) { grid-column: auto; } .equipment-editor-row { grid-template-columns: 1fr 64px; } }
+@media (max-width: 600px) { .login-panel { padding: 20px; } .login-card { padding: 26px 20px; } .new-hero-form-grid { grid-template-columns: 1fr; } .new-hero-form-grid > :first-child { grid-column: auto; } .single-hero-showcase { grid-template-columns: 1fr; text-align: center; } .single-hero-portrait { margin: auto; } .single-hero-stats { grid-template-columns: 1fr; } .talent-category-grid { grid-template-columns: 1fr; } .equipment-form { grid-template-columns: 1fr; } .equipment-form > :nth-child(3) { grid-column: auto; } .equipment-editor-row { grid-template-columns: 1fr 64px; } }

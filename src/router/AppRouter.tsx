@@ -14,7 +14,8 @@ function AppRouter() {
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/" element={<Protected><HomePage /></Protected>} />
-      <Route path="/held" element={<Protected><HeroPage /></Protected>} />
+      <Route path="/helden/:heroId" element={<Protected><HeroPage /></Protected>} />
+      <Route path="/held" element={<Navigate to="/" replace />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

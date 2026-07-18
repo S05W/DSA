@@ -3,7 +3,7 @@ import Badge from "react-bootstrap/Badge";
 import Button from "react-bootstrap/Button";
 import Form from "react-bootstrap/Form";
 import ProgressBar from "react-bootstrap/ProgressBar";
-import { Link } from "react-router";
+import { Link, Navigate, useParams } from "react-router";
 import Sidebar from "../components/layout/Sidebar";
 import { useApp } from "../context/app-context";
 import { talentCategories } from "../data/talents";
@@ -21,9 +21,12 @@ const tabs: { id: HeroTab; label: string }[] = [
 ];
 
 function HeroPage() {
-  const { hero, updateHero } = useApp();
+  const { heroId } = useParams();
+  const { heroes, updateHero } = useApp();
   const [activeTab, setActiveTab] = useState<HeroTab>("overview");
-  if (!hero) return null;
+  const hero = heroes.find((candidate) => candidate.id === heroId);
+  if (!hero) return <Navigate to="/" replace />;
+  const patchHero = (updater: (current: Hero) => Hero) => updateHero(hero.id, updater);
 
   const freeAp = hero.adventurePoints - hero.spentAdventurePoints;
 
@@ -56,9 +59,9 @@ function HeroPage() {
           <div className="hero-content-grid">
             <section className="content-column">
               <div className="resource-grid">
-                <EditableResourceCard label="Lebensenergie" field="lifePoints" maxField="maxLifePoints" hero={hero} updateHero={updateHero} unit="LeP" />
-                <EditableResourceCard label="Astralenergie" field="astralPoints" maxField="maxAstralPoints" hero={hero} updateHero={updateHero} unit="AsP" />
-                <EditableResourceCard label="Schicksalspunkte" field="fatePoints" maxField="maxFatePoints" hero={hero} updateHero={updateHero} unit="Schip" />
+                <EditableResourceCard label="Lebensenergie" field="lifePoints" maxField="maxLifePoints" hero={hero} updateHero={patchHero} unit="LeP" />
+                <EditableResourceCard label="Astralenergie" field="astralPoints" maxField="maxAstralPoints" hero={hero} updateHero={patchHero} unit="AsP" />
+                <EditableResourceCard label="Schicksalspunkte" field="fatePoints" maxField="maxFatePoints" hero={hero} updateHero={patchHero} unit="Schip" />
               </div>
 
               <article className="dsa-panel">
@@ -105,9 +108,9 @@ function HeroPage() {
           </section>
         )}
 
-        {activeTab === "talents" && <TalentEditor hero={hero} updateHero={updateHero} />}
+        {activeTab === "talents" && <TalentEditor hero={hero} updateHero={patchHero} />}
         {activeTab === "spells" && <SpellPanel hero={hero} />}
-        {activeTab === "equipment" && <EquipmentEditor hero={hero} updateHero={updateHero} />}
+        {activeTab === "equipment" && <EquipmentEditor hero={hero} updateHero={patchHero} />}
       </main>
     </div>
   );
