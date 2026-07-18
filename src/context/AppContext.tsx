@@ -51,6 +51,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setHeroes((current) => [...current, created]);
       return created;
     },
+    async deleteHero(heroId) {
+      await saveQueue.current;
+      await storage.deleteHero(heroId);
+      setHeroes((current) => current.filter((hero) => hero.id !== heroId));
+    },
     updateHero(heroId, updater) {
       setHeroes((current) => current.map((hero) => {
         if (hero.id !== heroId) return hero;

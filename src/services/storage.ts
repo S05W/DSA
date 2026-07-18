@@ -62,4 +62,8 @@ export const storage = {
     });
     return result.hero;
   },
+
+  async deleteHero(heroId: string): Promise<void> {
+    await request<{ ok: true }>(`/heroes/${encodeURIComponent(heroId)}`, { method: "DELETE" });
+  },
 };

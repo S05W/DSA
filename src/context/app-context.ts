@@ -9,6 +9,7 @@ export interface AppContextValue {
   register: (username: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   createHero: (hero: Hero) => Promise<Hero>;
+  deleteHero: (heroId: string) => Promise<void>;
   updateHero: (heroId: string, updater: (hero: Hero) => Hero) => void;
 }
 

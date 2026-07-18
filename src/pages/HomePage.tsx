@@ -17,7 +17,7 @@ const emptyDraft = {
 };
 
 function HomePage() {
-  const { createHero, heroes, user } = useApp();
+  const { createHero, deleteHero, heroes, user } = useApp();
   const navigate = useNavigate();
   const [showForm, setShowForm] = useState(false);
   const [draft, setDraft] = useState(emptyDraft);
@@ -38,6 +38,16 @@ function HomePage() {
       setError(reason instanceof Error ? reason.message : "Der Held konnte nicht angelegt werden.");
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleDelete(hero: (typeof heroes)[number]) {
+    const confirmed = window.confirm(`Möchtest du „${hero.name}“ wirklich endgültig löschen?`);
+    if (!confirmed) return;
+    try {
+      await deleteHero(hero.id);
+    } catch (reason) {
+      window.alert(reason instanceof Error ? reason.message : "Der Held konnte nicht gelöscht werden.");
     }
   }
 
@@ -97,7 +107,7 @@ function HomePage() {
               <p>Alle Änderungen werden automatisch in der Datenbank auf deinem Raspberry Pi gespeichert.</p>
             </div>
             <div className="hero-card-grid">
-              {heroes.map((hero) => <HeroCard key={hero.id} hero={hero} />)}
+              {heroes.map((hero) => <HeroCard key={hero.id} hero={hero} onDelete={handleDelete} />)}
               <button type="button" className="new-hero-tile" onClick={() => setShowForm(true)}>
                 <span className="new-hero-icon">+</span><strong>Weiteren Helden anlegen</strong><span>Erstelle einen zusätzlichen Heldenbogen für diesen Benutzer.</span>
               </button>

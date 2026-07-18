@@ -6,9 +6,10 @@ import "./HeroCard.css";
 
 interface HeroCardProps {
   hero: Hero;
+  onDelete: (hero: Hero) => void;
 }
 
-function HeroCard({ hero }: HeroCardProps) {
+function HeroCard({ hero, onDelete }: HeroCardProps) {
   const freeAp = hero.adventurePoints - hero.spentAdventurePoints;
 
   return (
@@ -34,6 +35,7 @@ function HeroCard({ hero }: HeroCardProps) {
         <Link className="hero-card-link" to={`/helden/${hero.id}`}>
           Heldenbogen öffnen <span aria-hidden="true">→</span>
         </Link>
+        <button type="button" className="hero-card-delete" onClick={() => onDelete(hero)}>Held löschen</button>
       </Card.Body>
     </Card>
   );

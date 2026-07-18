@@ -88,6 +88,7 @@ const queries = {
   saveHero: database.prepare(`
     UPDATE heroes SET data = ?, updated_at = ? WHERE user_id = ? AND hero_id = ?
   `),
+  deleteHero: database.prepare("DELETE FROM heroes WHERE user_id = ? AND hero_id = ?"),
 };
 
 function json(response, status, body, extraHeaders = {}) {
@@ -238,6 +239,14 @@ const server = createServer(async (request, response) => {
       const safeHero = { ...hero, id: heroId, ownerId: user.id, name: hero.name.trim() };
       queries.saveHero.run(JSON.stringify(safeHero), new Date().toISOString(), user.id, heroId);
       return json(response, 200, { hero: safeHero });
+    }
+    if (request.method === "DELETE" && heroRoute) {
+      const user = requireUser(request, response);
+      if (!user) return;
+      const heroId = decodeURIComponent(heroRoute[1]);
+      const result = queries.deleteHero.run(user.id, heroId);
+      if (result.changes === 0) return json(response, 404, { error: "Held nicht gefunden." });
+      return json(response, 200, { ok: true });
     }
     return json(response, 404, { error: "Nicht gefunden." });
   } catch (error) {
