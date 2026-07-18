@@ -5,6 +5,8 @@ import Form from "react-bootstrap/Form";
 import ProgressBar from "react-bootstrap/ProgressBar";
 import { Link, Navigate, useParams } from "react-router";
 import BodyPanel from "../components/hero/BodyPanel";
+import CheckRollModal, { type CheckRequest } from "../components/hero/CheckRollModal";
+import { CombatPanel, CombatTechniquesSection, LanguagesSection, MagicExtrasSection, MoneyPouchPanel, ResistancePanel } from "../components/hero/HeroExtraPanels";
 import { EquipmentDetailModal, SpellDetailModal } from "../components/hero/HeroDetailModals";
 import Sidebar from "../components/layout/Sidebar";
 import { useApp } from "../context/app-context";
@@ -13,7 +15,7 @@ import { talentCategories } from "../data/talents";
 import type { EquipmentItem, EquipmentSlotId, Hero, SpellValue, TalentCategory } from "../models/Hero";
 import { createId } from "../utils/id";
 
-type HeroTab = "overview" | "attributes" | "talents" | "spells" | "equipment" | "body";
+type HeroTab = "overview" | "attributes" | "talents" | "combat" | "spells" | "equipment" | "body" | "resistances";
 type HeroMode = "play" | "setup";
 type HeroUpdater = (updater: (hero: Hero) => Hero) => void;
 
@@ -21,9 +23,11 @@ const tabs: { id: HeroTab; label: string }[] = [
   { id: "overview", label: "Übersicht" },
   { id: "attributes", label: "Eigenschaften" },
   { id: "talents", label: "Talente" },
+  { id: "combat", label: "Kampf" },
   { id: "spells", label: "Zauber" },
   { id: "equipment", label: "Ausrüstung" },
   { id: "body", label: "Körper" },
+  { id: "resistances", label: "Resistenzen" },
 ];
 
 function initialsFor(name: string) {
@@ -36,6 +40,7 @@ function HeroPage() {
   const [activeTab, setActiveTab] = useState<HeroTab>("overview");
   const [mode, setMode] = useState<HeroMode>("play");
   const [equipmentDetailId, setEquipmentDetailId] = useState<string | null>(null);
+  const [checkRequest, setCheckRequest] = useState<CheckRequest | null>(null);
   const hero = heroes.find((candidate) => candidate.id === heroId);
   if (!hero) return <Navigate to="/" replace />;
   const patchHero: HeroUpdater = (updater) => updateHero(hero.id, updater);
@@ -133,26 +138,22 @@ function HeroPage() {
                   )}
                 </article>
 
-                <article className="dsa-panel">
-                  <div className="panel-heading"><span>Schnellzugriff</span><small>Höchste Werte</small></div>
-                  <div className="quick-list">
-                    {[...hero.attributes].sort((a, b) => b.value - a.value).slice(0, 4).map((attribute) => (
-                      <div key={attribute.short}><span><b>{attribute.short}</b>{attribute.name}</span><strong>{attribute.value}</strong></div>
-                    ))}
-                  </div>
-                </article>
+                <MoneyPouchPanel hero={hero} updateHero={patchHero} />
               </aside>
             </div>
           </>
         )}
 
         {activeTab === "attributes" && <AttributePanel hero={hero} updateHero={patchHero} setup={setup} />}
-        {activeTab === "talents" && <TalentPanel hero={hero} updateHero={patchHero} setup={setup} />}
-        {activeTab === "spells" && <SpellPanel hero={hero} updateHero={patchHero} setup={setup} />}
+        {activeTab === "talents" && <TalentPanel hero={hero} updateHero={patchHero} setup={setup} onRoll={setCheckRequest} />}
+        {activeTab === "combat" && <CombatPanel hero={hero} updateHero={patchHero} setup={setup} />}
+        {activeTab === "spells" && <SpellPanel hero={hero} updateHero={patchHero} setup={setup} onRoll={setCheckRequest} />}
         {activeTab === "equipment" && <EquipmentPanel hero={hero} updateHero={patchHero} setup={setup} onInspectItem={setEquipmentDetailId} onPatchItem={patchEquipment} />}
         {activeTab === "body" && <BodyPanel hero={hero} updateHero={patchHero} setup={setup} onInspectItem={setEquipmentDetailId} />}
+        {activeTab === "resistances" && <ResistancePanel hero={hero} updateHero={patchHero} setup={setup} />}
 
         <EquipmentDetailModal item={detailItem} setup={setup} equippedAt={equippedSlot} onHide={() => setEquipmentDetailId(null)} onChange={(patch) => { if (equipmentDetailId) patchEquipment(equipmentDetailId, patch); }} onDelete={() => { if (equipmentDetailId) removeEquipment(equipmentDetailId); }} />
+        <CheckRollModal key={checkRequest ? `${checkRequest.kind}-${checkRequest.name}` : "closed"} request={checkRequest} attributes={hero.attributes} onHide={() => setCheckRequest(null)} />
       </main>
     </div>
   );
@@ -244,7 +245,7 @@ function AttributePanel({ hero, updateHero, setup }: { hero: Hero; updateHero: H
   );
 }
 
-function TalentPanel({ hero, updateHero, setup }: { hero: Hero; updateHero: HeroUpdater; setup: boolean }) {
+function TalentPanel({ hero, updateHero, setup, onRoll }: { hero: Hero; updateHero: HeroUpdater; setup: boolean; onRoll: (request: CheckRequest) => void }) {
   const grouped = useMemo(() => talentCategories.map((category) => ({ category, talents: hero.talents.filter((talent) => talent.category === category) })), [hero.talents]);
   function patchTalent(category: TalentCategory, name: string, patch: Partial<(typeof hero.talents)[number]>) {
     updateHero((current) => ({ ...current, talents: current.talents.map((talent) => talent.category === category && talent.name === name ? { ...talent, ...patch } : talent) }));
@@ -257,15 +258,17 @@ function TalentPanel({ hero, updateHero, setup }: { hero: Hero; updateHero: Hero
       <div className="talent-category-grid">
         {grouped.map(({ category, talents }) => (
           <section className="talent-category" key={category}><h2>{category}</h2><div className="talent-rows">
-            {talents.map((talent) => <div key={talent.name} className="talent-row"><span className="talent-name">{talent.name}</span>{setup ? <input className="talent-check-input" value={talent.check} onChange={(event) => patchTalent(category, talent.name, { check: event.target.value })} aria-label={`Probe für ${talent.name}`} /> : <small className="talent-check">{talent.check}</small>}<input className="talent-value-input" type="number" min={0} max={30} disabled={!setup} value={talent.value} onChange={(event) => patchTalent(category, talent.name, { value: Math.max(0, Math.min(30, Number(event.target.value))) })} aria-label={`Talentwert für ${talent.name}`} /></div>)}
+            {talents.map((talent) => <div key={talent.name} className="talent-row"><span className="talent-name">{talent.name}</span>{setup ? <input className="talent-check-input" value={talent.check} onChange={(event) => patchTalent(category, talent.name, { check: event.target.value })} aria-label={`Probe für ${talent.name}`} /> : <small className="talent-check">{talent.check}</small>}<input className="talent-value-input" type="number" min={0} max={30} disabled={!setup} value={talent.value} onChange={(event) => patchTalent(category, talent.name, { value: Math.max(0, Math.min(30, Number(event.target.value))) })} aria-label={`Talentwert für ${talent.name}`} /><button type="button" className="talent-roll-button" onClick={() => onRoll({ name: talent.name, check: talent.check, value: talent.value, kind: "Talent" })}>3W20</button></div>)}
           </div></section>
         ))}
       </div>
+      <CombatTechniquesSection hero={hero} updateHero={updateHero} setup={setup} embedded />
+      <LanguagesSection hero={hero} updateHero={updateHero} setup={setup} />
     </section>
   );
 }
 
-function SpellPanel({ hero, updateHero, setup }: { hero: Hero; updateHero: HeroUpdater; setup: boolean }) {
+function SpellPanel({ hero, updateHero, setup, onRoll }: { hero: Hero; updateHero: HeroUpdater; setup: boolean; onRoll: (request: CheckRequest) => void }) {
   const [draft, setDraft] = useState<SpellValue>({ name: "", check: "", value: 0, cost: "" });
   const [detailIndex, setDetailIndex] = useState<number | null>(null);
   const detailSpell = detailIndex === null ? null : hero.spells[detailIndex] ?? null;
@@ -298,15 +301,15 @@ function SpellPanel({ hero, updateHero, setup }: { hero: Hero; updateHero: HeroU
       {hero.spells.length ? (
         <div className="spell-grid">
           {hero.spells.map((spell, index) => (
-            <button type="button" key={`${index}-${spell.name}`} className="spell-card spell-detail-card" onClick={() => setDetailIndex(index)}>
-              <div><span>Zauber</span><strong>{spell.name}</strong></div>
-              <dl><div><dt>Probe</dt><dd>{spell.check || "–"}</dd></div><div><dt>FW</dt><dd>{spell.value}</dd></div><div><dt>Kosten</dt><dd>{spell.cost || "–"}</dd></div></dl>
-              <small>Für Details öffnen →</small>
-            </button>
+            <article key={`${index}-${spell.name}`} className="spell-card spell-detail-card">
+              <button type="button" className="spell-detail-open" onClick={() => setDetailIndex(index)}><div><span>Zauber</span><strong>{spell.name}</strong></div><dl><div><dt>Probe</dt><dd>{spell.check || "–"}</dd></div><div><dt>FW</dt><dd>{spell.value}</dd></div><div><dt>Kosten</dt><dd>{spell.cost || "–"}</dd></div></dl><small>Für Details öffnen →</small></button>
+              <button type="button" className="spell-roll-button" onClick={() => onRoll({ name: spell.name, check: spell.check, value: spell.value, kind: "Zauber" })}>3W20-Probe würfeln</button>
+            </article>
           ))}
         </div>
       ) : <p className="empty-state">Dieser Held beherrscht noch keine Zauber.</p>}
       <SpellDetailModal spell={detailSpell} setup={setup} onHide={() => setDetailIndex(null)} onChange={(patch) => { if (detailIndex !== null) patchSpell(detailIndex, patch); }} onDelete={() => { if (detailIndex !== null) removeSpell(detailIndex); }} />
+      <MagicExtrasSection hero={hero} updateHero={updateHero} setup={setup} />
     </section>
   );
 }

@@ -319,3 +319,99 @@
 @media (max-width: 900px) { .login-page { grid-template-columns: 1fr; } .login-visual { padding: 54px 28px; } .single-hero-showcase { grid-template-columns: auto 1fr; } .single-hero-stats { grid-column: 1 / -1; grid-template-columns: repeat(3, 1fr); } .single-hero-link { grid-column: 1 / -1; } .talent-category-grid { grid-template-columns: repeat(2, minmax(200px, 1fr)); } .equipment-form { grid-template-columns: 1fr 100px; } .equipment-form > :nth-child(3) { grid-column: 1 / -1; } .equipment-editor-row { grid-template-columns: 1fr 70px; } .equipment-notes { grid-column: 1 / -1; } }
 @media (max-width: 700px) { .body-workspace { grid-template-columns: 1fr; } .body-figure-card { order: -1; } .body-part-list { grid-column: auto; grid-template-columns: 1fr; } .body-part-list h2 { grid-column: auto; } .body-figure { height: 470px; } .detail-form-grid { grid-template-columns: 1fr; } .detail-form-grid .detail-wide { grid-column: auto; } }
 @media (max-width: 600px) { .login-panel { padding: 20px; } .login-card { padding: 26px 20px; } .hero-page-toolbar { align-items: stretch; flex-direction: column; } .mode-switch { width: 100%; } .mode-switch button { flex: 1; } .hero-setup-grid, .new-hero-form-grid, .spell-form, .status-form, .dice-custom-form { grid-template-columns: 1fr; } .hero-setup-grid .setup-wide, .new-hero-form-grid > :first-child { grid-column: auto; } .single-hero-showcase { grid-template-columns: 1fr; text-align: center; } .single-hero-portrait { margin: auto; } .single-hero-stats { grid-template-columns: 1fr; } .talent-category-grid { grid-template-columns: 1fr; } .equipment-form { grid-template-columns: 1fr; } .equipment-form > :nth-child(3) { grid-column: auto; } .equipment-editor-row { grid-template-columns: 1fr 64px; } .equipment-list div { align-items: flex-start; flex-wrap: wrap; } .equipment-list small { width: 100%; margin-left: 0; } .body-history-list li { grid-template-columns: 1fr; gap: 3px; } .dice-quick-grid { grid-template-columns: repeat(2, 1fr); } .dice-history li { grid-template-columns: 1fr auto; } .dice-history li p { grid-column: 1 / -1; } .attribute-reference-heading { flex-direction: column; } .attribute-reference > div:last-child { grid-template-columns: repeat(2, 1fr); } }
+
+/* Geldbeutel */
+.money-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; }
+.money-grid label { position: relative; display: block; }
+.money-grid label > span { display: block; margin-bottom: 5px; color: var(--muted); font-size: .68rem; font-weight: 800; text-transform: uppercase; }
+.money-grid input { width: 100%; padding: 12px 28px 12px 8px; border: 1px solid var(--line); border-radius: 9px; background: var(--paper); text-align: center; font: 700 1.15rem Georgia, serif; }
+.money-grid label > small { position: absolute; right: 9px; bottom: 13px; color: var(--ruby); font-weight: 900; }
+
+/* Automatische Proben */
+.talent-category-grid { grid-template-columns: repeat(auto-fit, minmax(255px, 1fr)); }
+.talent-row { grid-template-columns: minmax(0, 1fr) 92px 48px 52px; }
+.talent-roll-button { padding: 6px 5px; border: 1px solid var(--forest); border-radius: 7px; color: var(--forest); background: transparent; font-size: .68rem; font-weight: 900; }
+.talent-roll-button:hover { color: white; background: var(--forest); }
+.spell-detail-card { overflow: hidden; padding: 0; cursor: default; }
+.spell-detail-card:hover { border-color: #b89555; box-shadow: 0 8px 20px rgba(57,45,28,.1); }
+.spell-detail-open { width: 100%; padding: 20px; border: 0; color: var(--ink); background: transparent; text-align: left; }
+.spell-detail-open > div span { display: block; color: var(--ruby); font-size: .72rem; font-weight: 800; text-transform: uppercase; }
+.spell-detail-open > div strong { font-family: Georgia, serif; font-size: 1.2rem; }
+.spell-detail-open dl { margin: 18px 0 0; }
+.spell-detail-open dl div { padding: 7px 0; display: flex; justify-content: space-between; border-top: 1px solid #ddd2c0; }
+.spell-detail-open dt { color: var(--muted); }
+.spell-detail-open dd { margin: 0; font-weight: 700; }
+.spell-detail-open > small { display: block; margin-top: 15px; color: var(--forest); font-weight: 800; }
+.spell-roll-button { width: 100%; padding: 10px; border: 0; border-top: 1px solid var(--line); color: white; background: var(--forest); font-weight: 900; }
+.check-summary { padding: 14px; display: flex; align-items: center; justify-content: space-between; gap: 12px; border-radius: 10px; background: var(--paper); }
+.check-summary span { color: var(--muted); font-size: .78rem; font-weight: 800; text-transform: uppercase; }
+.check-summary strong { color: var(--ruby); font-family: Georgia, serif; }
+.check-modifier { margin: 18px 0; }
+.check-modifier input { max-width: 140px; }
+.check-modifier .form-text { display: block; }
+.check-invalid { padding: 12px; border-radius: 8px; color: #8f302b; background: #f8e4e1; }
+.check-result { margin-top: 20px; padding: 18px; border: 2px solid var(--line); border-radius: 14px; }
+.check-result-success, .check-result-critical { border-color: #6c9a7a; background: #edf4ef; }
+.check-result-failure, .check-result-botch { border-color: #b95c55; background: #f8e8e5; }
+.check-result-heading { display: flex; align-items: center; justify-content: space-between; }
+.check-result-heading strong { font: 700 1.25rem Georgia, serif; }
+.check-result-heading span { padding: 5px 10px; border-radius: 999px; color: white; background: var(--forest); font-weight: 900; }
+.check-dice-lines { margin: 15px 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.check-dice-lines article { padding: 12px; display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 3px 10px; border: 1px solid var(--line); border-radius: 10px; background: white; }
+.check-dice-lines article span { color: var(--ruby); font-weight: 900; }
+.check-dice-lines article b { text-align: right; font: 700 2rem Georgia, serif; }
+.check-dice-lines article small, .check-dice-lines article em { grid-column: 1 / -1; color: var(--muted); font-size: .72rem; font-style: normal; }
+.check-dice-lines article em { color: var(--forest); font-weight: 800; }
+
+/* Kampf, Sprachen und Listen */
+.combat-stat-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; }
+.combat-stat-grid article { padding: 18px 10px; border: 1px solid var(--line); border-radius: 13px; background: var(--paper); text-align: center; }
+.combat-stat-grid article span, .combat-stat-grid article small, .combat-stat-grid article strong { display: block; }
+.combat-stat-grid article span { color: var(--ruby); font-weight: 900; }
+.combat-stat-grid article strong { margin: 5px 0; font: 700 2rem Georgia, serif; }
+.combat-stat-grid article small { color: var(--muted); }
+.combat-stat-grid article input { width: 72px; margin: 5px auto; padding: 6px; border: 1px solid var(--line); border-radius: 8px; text-align: center; font: 700 1.45rem Georgia, serif; }
+.combat-technique-note { margin: 20px 0 0; color: var(--muted); }
+.subsection-card { margin-top: 28px; padding: 22px; border: 1px solid var(--line); border-radius: 14px; background: var(--paper); }
+.subsection-heading { margin-bottom: 16px; display: flex; justify-content: space-between; gap: 12px; }
+.subsection-heading span, .subsection-heading small { display: block; }
+.subsection-heading span { font: 700 1.14rem Georgia, serif; }
+.subsection-heading small { margin-top: 3px; color: var(--muted); }
+.compact-add-form { margin-bottom: 16px; display: grid; grid-template-columns: minmax(180px, 1fr) 150px auto; gap: 9px; }
+.language-add-form, .resistance-add-form { grid-template-columns: minmax(180px, 1fr) auto; }
+.combat-technique-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 10px; }
+.combat-technique-grid > article { padding: 14px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; border: 1px solid var(--line); border-radius: 11px; background: white; }
+.combat-technique-grid input, .combat-technique-grid textarea, .language-grid input, .feature-grid input, .feature-grid textarea, .resistance-grid input, .resistance-grid textarea { width: 100%; padding: 7px 8px; border: 1px solid var(--line); border-radius: 7px; background: white; }
+.combat-technique-grid label, .language-grid label, .resistance-grid label { color: var(--muted); font-size: .66rem; font-weight: 800; text-transform: uppercase; }
+.combat-technique-grid label input, .language-grid label input, .resistance-grid label input { margin-top: 3px; }
+.technique-name, .technique-notes { grid-column: 1 / -1; }
+.technique-title { grid-column: 1 / -1; display: flex; justify-content: space-between; }
+.technique-title span { color: var(--muted); font-size: .72rem; }
+.combat-technique-grid dl { grid-column: 1 / -1; margin: 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.combat-technique-grid dl div { padding: 7px; border-radius: 7px; background: var(--paper); text-align: center; }
+.combat-technique-grid dt { color: var(--muted); font-size: .65rem; }
+.combat-technique-grid dd { margin: 2px 0 0; font-weight: 900; }
+.combat-technique-grid article > p { grid-column: 1 / -1; margin: 0; color: var(--muted); font-size: .82rem; }
+.list-delete { grid-column: 1 / -1; justify-self: start; border: 0; color: var(--ruby); background: transparent; font-size: .76rem; font-weight: 800; }
+.language-grid, .feature-grid, .resistance-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px; }
+.language-grid article, .feature-grid article, .resistance-grid article { padding: 14px; border: 1px solid var(--line); border-radius: 11px; background: white; }
+.language-grid article { display: grid; grid-template-columns: minmax(0, 1fr) 70px; gap: 8px; }
+.language-name, .language-notes, .language-grid article > small { grid-column: 1 / -1; }
+.language-grid article > span { justify-self: end; color: var(--ruby); font-weight: 900; }
+.language-grid article > small { color: var(--muted); }
+.magic-extras { margin-top: 28px; }
+.feature-grid article { display: flex; flex-direction: column; gap: 8px; }
+.feature-grid article p { margin: 4px 0 0; color: var(--muted); }
+
+/* Resistenzen */
+.resistance-grid article { display: grid; grid-template-columns: minmax(0, 1fr) 100px; gap: 10px; }
+.resistance-grid article.immune { border-color: #98733f; background: #fbf3df; }
+.resistance-grid article > textarea, .resistance-grid article > .form-check, .resistance-grid article > small { grid-column: 1 / -1; }
+.resistance-grid article > div { display: flex; align-items: center; justify-content: space-between; }
+.resistance-grid article > div span { padding: 4px 8px; border-radius: 999px; color: white; background: var(--ruby); font-size: .7rem; font-weight: 900; }
+.resistance-grid article > b { text-align: right; font: 700 2rem Georgia, serif; color: var(--forest); }
+.resistance-grid article > small { color: var(--muted); }
+
+@media (max-width: 1100px) { .combat-stat-grid { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 700px) { .combat-stat-grid { grid-template-columns: repeat(2, 1fr); } .check-dice-lines { grid-template-columns: 1fr; } .compact-add-form { grid-template-columns: 1fr; } }
+@media (max-width: 600px) { .money-grid { grid-template-columns: 1fr; } .talent-row { grid-template-columns: minmax(0, 1fr) 80px 46px; } .talent-roll-button { grid-column: 1 / -1; } .combat-technique-grid dl { grid-template-columns: repeat(2, 1fr); } }

@@ -30,6 +30,55 @@ export interface SpellValue {
   notes?: string;
 }
 
+export interface CombatTechnique {
+  id: string;
+  name: string;
+  kind: "melee" | "ranged";
+  skill: number;
+  attack: number;
+  parry: number | null;
+  damage: string;
+  notes: string;
+}
+
+export interface CombatState {
+  attack: number;
+  parry: number;
+  dodge: number;
+  initiative: number;
+  speed: number;
+  armor: number;
+  techniques: CombatTechnique[];
+}
+
+export interface LanguageKnowledge {
+  id: string;
+  name: string;
+  level: number;
+  script: string;
+  notes: string;
+}
+
+export interface MoneyPouch {
+  ducats: number;
+  silver: number;
+  heller: number;
+}
+
+export interface NamedFeature {
+  id: string;
+  name: string;
+  description: string;
+}
+
+export interface ResistanceEntry {
+  id: string;
+  name: string;
+  protection: number;
+  immune: boolean;
+  notes: string;
+}
+
 export interface EquipmentItem {
   id: string;
   name: string;
@@ -104,6 +153,12 @@ export interface Hero {
   attributes: AttributeValue[];
   talents: TalentValue[];
   spells: SpellValue[];
+  combat: CombatState;
+  languages: LanguageKnowledge[];
+  money: MoneyPouch;
+  magicalSpecialAbilities: NamedFeature[];
+  cantrips: NamedFeature[];
+  resistances: ResistanceEntry[];
   equipment: EquipmentItem[];
   body: BodyState;
 }

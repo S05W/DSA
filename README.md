@@ -12,6 +12,10 @@ Die Körperfreigabe ist bei allen Gegenständen standardmäßig ausgeschaltet. I
 
 Talente zeigen ihre drei Eigenschaftsproben, während eine kompakte Eigenschaftsübersicht über Talenten und Zaubern den direkten Vergleich erleichtert. Die geschützte Würfelseite bietet W4, W6, W8, W10, W12, W20 und W100 sowie frei wählbare Würfelanzahl, Seitenzahl und Modifikator.
 
+Talent- und Zauberproben können direkt als 3W20-Probe ausgeführt werden. Die Auswertung zeigt jeden Einzelwurf, die verbrauchten Fertigkeitspunkte, Erfolg oder Misserfolg und die erreichte Qualitätsstufe. Erleichterungen und Erschwernisse lassen sich vor dem Wurf einstellen.
+
+Der Kampf-Tab verwaltet AT, PA, Ausweichen, Initiative, Geschwindigkeit und Rüstungsschutz. Kampftechniken sowie Sprachen und Schriften stehen zusätzlich unter den Talenten zur Verfügung. Die Übersicht enthält einen Geldbeutel für Dukaten, Silbertaler und Heller. Zaubertricks, magische Sonderfertigkeiten sowie ein eigener Bereich für Resistenzen und Immunitäten ergänzen den Heldenbogen.
+
 ## Voraussetzungen
 
 - Node.js 24
