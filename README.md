@@ -1,75 +1,91 @@
-# React + TypeScript + Vite
+# DSA-Heldenbogen
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React-Frontend mit zentraler Node.js-API und SQLite-Datenbank. Jeder Benutzer besitzt genau einen Helden. Anmeldung und Heldendaten werden auf dem Server gespeichert.
 
-Currently, two official plugins are available:
+## Voraussetzungen
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Node.js 24
+- npm
+- Nginx für den Produktivbetrieb
 
-## React Compiler
+## Lokale Entwicklung
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+In einem Terminal die API starten:
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```bash
+npm ci
+npm run server
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+In einem zweiten Terminal das Frontend starten:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```bash
+npm run dev
 ```
+
+Vite leitet `/api` während der Entwicklung an `127.0.0.1:3000` weiter. Die SQLite-Datei wird unter `data/dsa.db` erstellt und nicht in Git aufgenommen.
+
+## Installation auf dem Raspberry Pi
+
+```bash
+cd ~/apps/DSA
+npm ci
+npm run lint
+npm run build
+sudo mkdir -p /var/www/dsa
+sudo rsync -a --delete dist/ /var/www/dsa/
+```
+
+API als Dienst installieren:
+
+```bash
+sudo cp deploy/dsa-api.service /etc/systemd/system/dsa-api.service
+sudo systemctl daemon-reload
+sudo systemctl enable --now dsa-api
+sudo systemctl status dsa-api
+```
+
+Nginx-Konfiguration installieren:
+
+```bash
+sudo cp deploy/nginx-dsa.conf /etc/nginx/sites-available/dsa
+sudo ln -sfn /etc/nginx/sites-available/dsa /etc/nginx/sites-enabled/dsa
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+API testen:
+
+```bash
+curl http://127.0.0.1:3000/api/health
+```
+
+Erwartete Antwort:
+
+```json
+{"ok":true}
+```
+
+## Daten und Backups
+
+Die Datenbank liegt auf dem Pi unter:
+
+```text
+/home/simon/apps/DSA/data/dsa.db
+```
+
+Für ein konsistentes manuelles Backup:
+
+```bash
+mkdir -p ~/backups
+sqlite3 ~/apps/DSA/data/dsa.db ".backup '$HOME/backups/dsa-$(date +%F).db'"
+```
+
+Die Dateien `.env`, `data/` und `*.db` werden bewusst nicht versioniert.
+
+## Sicherheit
+
+- Passwörter werden mit `scrypt` und individuellem Salt gespeichert.
+- Sitzungen verwenden zufällige Token in `HttpOnly`- und `SameSite=Strict`-Cookies.
+- Die API lauscht nur auf `127.0.0.1`; Zugriffe laufen über Nginx.
+- Für einen späteren Internetzugriff muss HTTPS eingerichtet und `COOKIE_SECURE=true` gesetzt werden.

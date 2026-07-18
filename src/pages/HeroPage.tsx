@@ -8,6 +8,7 @@ import Sidebar from "../components/layout/Sidebar";
 import { useApp } from "../context/app-context";
 import { talentCategories } from "../data/talents";
 import type { EquipmentItem, Hero, TalentCategory } from "../models/Hero";
+import { createId } from "../utils/id";
 
 type HeroTab = "overview" | "attributes" | "talents" | "spells" | "equipment";
 
@@ -204,7 +205,7 @@ function EquipmentEditor({ hero, updateHero }: { hero: Hero; updateHero: (update
   function addItem(event: React.FormEvent) {
     event.preventDefault();
     if (!draft.name.trim()) return;
-    const item: EquipmentItem = { id: crypto.randomUUID(), name: draft.name.trim(), quantity: Math.max(1, draft.quantity), notes: draft.notes.trim() };
+    const item: EquipmentItem = { id: createId(), name: draft.name.trim(), quantity: Math.max(1, draft.quantity), notes: draft.notes.trim() };
     updateHero((current) => ({ ...current, equipment: [...current.equipment, item] }));
     setDraft({ name: "", quantity: 1, notes: "" });
   }

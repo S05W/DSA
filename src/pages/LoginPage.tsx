@@ -17,8 +17,8 @@ function LoginPage() {
   async function submit(event: React.FormEvent) {
     event.preventDefault();
     setError("");
-    if (username.trim().length < 3 || password.length < 4) {
-      setError("Der Name benötigt mindestens 3 und das Passwort mindestens 4 Zeichen.");
+    if (username.trim().length < 3 || password.length < 8) {
+      setError("Der Name benötigt mindestens 3 und das Passwort mindestens 8 Zeichen.");
       return;
     }
     try {
@@ -38,17 +38,17 @@ function LoginPage() {
         <div className="login-rune">A</div>
         <p className="page-eyebrow">Das Schwarze Auge</p>
         <h1>Dein Heldenbogen.<br />Deine Geschichte.</h1>
-        <p>Werte, Talente, Zauber und Ausrüstung bleiben auf diesem Gerät gespeichert.</p>
+        <p>Werte, Talente, Zauber und Ausrüstung bleiben sicher auf deinem DSA-Server gespeichert.</p>
       </section>
 
       <section className="login-panel">
         <div className="login-card">
           <p className="page-eyebrow">Heldenarchiv</p>
-          <h2>{mode === "login" ? "Willkommen zurück" : "Lokales Profil erstellen"}</h2>
+          <h2>{mode === "login" ? "Willkommen zurück" : "Profil erstellen"}</h2>
           <p className="login-hint">
             {mode === "login"
               ? "Melde dich an, um deinen Helden zu öffnen."
-              : "Jedes lokale Profil besitzt genau einen Helden."}
+              : "Jedes Profil besitzt genau einen Helden."}
           </p>
 
           <Form onSubmit={submit}>
@@ -69,7 +69,7 @@ function LoginPage() {
           <button type="button" className="login-switch" onClick={() => { setMode(mode === "login" ? "register" : "login"); setError(""); }}>
             {mode === "login" ? "Noch kein Profil? Jetzt erstellen" : "Bereits ein Profil? Zur Anmeldung"}
           </button>
-          <small className="local-security-note">Prototyp: Die Daten liegen ausschließlich lokal in diesem Browser.</small>
+          <small className="local-security-note">Deine Daten werden zentral auf dem DSA-Server gespeichert.</small>
         </div>
       </section>
     </main>

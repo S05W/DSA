@@ -1,4 +1,5 @@
 import type { Hero } from "../models/Hero";
+import { createId } from "../utils/id";
 import { createDefaultTalents } from "./talents";
 
 export function createDefaultHero(ownerId: string): Hero {
@@ -42,10 +43,10 @@ export function createDefaultHero(ownerId: string): Hero {
       { name: "Blitz dich find", check: "MU / IN / CH", value: 8, cost: "4 AsP" },
     ],
     equipment: [
-      { id: crypto.randomUUID(), name: "Magierstab", quantity: 1, notes: "Holzstab mit Smaragd" },
-      { id: crypto.randomUUID(), name: "Zauberbuch", quantity: 1, notes: "" },
-      { id: crypto.randomUUID(), name: "Alchimistenbesteck", quantity: 1, notes: "" },
-      { id: crypto.randomUUID(), name: "Robuste Reisekleidung", quantity: 1, notes: "" },
+      { id: createId(), name: "Magierstab", quantity: 1, notes: "Holzstab mit Smaragd" },
+      { id: createId(), name: "Zauberbuch", quantity: 1, notes: "" },
+      { id: createId(), name: "Alchimistenbesteck", quantity: 1, notes: "" },
+      { id: createId(), name: "Robuste Reisekleidung", quantity: 1, notes: "" },
     ],
   };
 }

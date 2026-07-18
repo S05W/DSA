@@ -7,7 +7,7 @@ export interface AppContextValue {
   hero: Hero | null;
   login: (username: string, password: string) => Promise<void>;
   register: (username: string, password: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   updateHero: (updater: (hero: Hero) => Hero) => void;
 }
 
