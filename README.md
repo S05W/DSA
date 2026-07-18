@@ -4,6 +4,8 @@ React-Frontend mit zentraler Node.js-API und SQLite-Datenbank. Jeder Benutzer ka
 
 Der Heldenbogen besitzt einen geschützten Spielmodus für laufende Ressourcen und einen Setup-Modus für Grunddaten, Eigenschaften, Talente, Zauber, Maximalwerte und Inventar. Helden können im Archiv nach einer Bestätigung wieder gelöscht werden.
 
+Zauber und Gegenstände besitzen ausführliche Detailansichten. Die Körperansicht verwaltet zonenbezogene Verletzungen, globale Statuseffekte und per Drag-and-drop ausgerüstete Gegenstände. Bestehende Heldendaten werden beim Laden automatisch um diese Bereiche ergänzt.
+
 ## Voraussetzungen
 
 - Node.js 24

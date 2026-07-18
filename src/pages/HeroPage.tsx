@@ -4,13 +4,16 @@ import Button from "react-bootstrap/Button";
 import Form from "react-bootstrap/Form";
 import ProgressBar from "react-bootstrap/ProgressBar";
 import { Link, Navigate, useParams } from "react-router";
+import BodyPanel from "../components/hero/BodyPanel";
+import { EquipmentDetailModal, SpellDetailModal } from "../components/hero/HeroDetailModals";
 import Sidebar from "../components/layout/Sidebar";
 import { useApp } from "../context/app-context";
+import { equipmentSlots } from "../data/body";
 import { talentCategories } from "../data/talents";
 import type { EquipmentItem, Hero, SpellValue, TalentCategory } from "../models/Hero";
 import { createId } from "../utils/id";
 
-type HeroTab = "overview" | "attributes" | "talents" | "spells" | "equipment";
+type HeroTab = "overview" | "attributes" | "talents" | "spells" | "equipment" | "body";
 type HeroMode = "play" | "setup";
 type HeroUpdater = (updater: (hero: Hero) => Hero) => void;
 
@@ -20,6 +23,7 @@ const tabs: { id: HeroTab; label: string }[] = [
   { id: "talents", label: "Talente" },
   { id: "spells", label: "Zauber" },
   { id: "equipment", label: "Ausrüstung" },
+  { id: "body", label: "Körper" },
 ];
 
 function initialsFor(name: string) {
@@ -31,12 +35,28 @@ function HeroPage() {
   const { heroes, updateHero } = useApp();
   const [activeTab, setActiveTab] = useState<HeroTab>("overview");
   const [mode, setMode] = useState<HeroMode>("play");
+  const [equipmentDetailId, setEquipmentDetailId] = useState<string | null>(null);
   const hero = heroes.find((candidate) => candidate.id === heroId);
   if (!hero) return <Navigate to="/" replace />;
   const patchHero: HeroUpdater = (updater) => updateHero(hero.id, updater);
   const setup = mode === "setup";
   const freeAp = hero.adventurePoints - hero.spentAdventurePoints;
   const apPercentage = hero.adventurePoints > 0 ? (hero.spentAdventurePoints / hero.adventurePoints) * 100 : 0;
+  const detailItem = hero.equipment.find((item) => item.id === equipmentDetailId) ?? null;
+  const equippedSlot = equipmentSlots.find((slot) => hero.body.equipped[slot.id] === equipmentDetailId)?.label;
+
+  function patchEquipment(itemId: string, patch: Partial<EquipmentItem>) {
+    patchHero((current) => ({ ...current, equipment: current.equipment.map((item) => item.id === itemId ? { ...item, ...patch } : item) }));
+  }
+
+  function removeEquipment(itemId: string) {
+    patchHero((current) => ({
+      ...current,
+      equipment: current.equipment.filter((item) => item.id !== itemId),
+      body: { ...current.body, equipped: Object.fromEntries(Object.entries(current.body.equipped).filter(([, equippedId]) => equippedId !== itemId)) },
+    }));
+    setEquipmentDetailId(null);
+  }
 
   return (
     <div className="app-shell">
@@ -49,7 +69,7 @@ function HeroPage() {
             <button type="button" className={setup ? "active" : ""} onClick={() => setMode("setup")}>Setup-Modus</button>
           </div>
         </div>
-        <p className={`mode-note mode-note-${mode}`}>{setup ? "Setup-Modus: Grunddaten, Werte, Talente, Zauber und Ausrüstung können verändert werden." : "Spielmodus: Nur aktuelle LeP, AsP und Schicksalspunkte können verändert werden."}</p>
+        <p className={`mode-note mode-note-${mode}`}>{setup ? "Setup-Modus: Grunddaten, Werte, Talente, Zauber, Ausrüstung und Belastungsgrenzen können verändert werden." : "Spielmodus: Laufende Ressourcen, Körperschäden, Statuseffekte und angelegte Ausrüstung können verändert werden."}</p>
 
         <section className={`hero-banner hero-banner-${hero.accent}`}>
           <div className="hero-banner-portrait">{hero.initials}</div>
@@ -120,7 +140,10 @@ function HeroPage() {
         {activeTab === "attributes" && <AttributePanel hero={hero} updateHero={patchHero} setup={setup} />}
         {activeTab === "talents" && <TalentPanel hero={hero} updateHero={patchHero} setup={setup} />}
         {activeTab === "spells" && <SpellPanel hero={hero} updateHero={patchHero} setup={setup} />}
-        {activeTab === "equipment" && <EquipmentPanel hero={hero} updateHero={patchHero} setup={setup} />}
+        {activeTab === "equipment" && <EquipmentPanel hero={hero} updateHero={patchHero} setup={setup} onInspectItem={setEquipmentDetailId} />}
+        {activeTab === "body" && <BodyPanel hero={hero} updateHero={patchHero} setup={setup} onInspectItem={setEquipmentDetailId} />}
+
+        <EquipmentDetailModal item={detailItem} setup={setup} equippedAt={equippedSlot} onHide={() => setEquipmentDetailId(null)} onChange={(patch) => { if (equipmentDetailId) patchEquipment(equipmentDetailId, patch); }} onDelete={() => { if (equipmentDetailId) removeEquipment(equipmentDetailId); }} />
       </main>
     </div>
   );
@@ -234,6 +257,8 @@ function TalentPanel({ hero, updateHero, setup }: { hero: Hero; updateHero: Hero
 
 function SpellPanel({ hero, updateHero, setup }: { hero: Hero; updateHero: HeroUpdater; setup: boolean }) {
   const [draft, setDraft] = useState<SpellValue>({ name: "", check: "", value: 0, cost: "" });
+  const [detailIndex, setDetailIndex] = useState<number | null>(null);
+  const detailSpell = detailIndex === null ? null : hero.spells[detailIndex] ?? null;
   function addSpell(event: FormEvent) {
     event.preventDefault();
     if (!draft.name.trim()) return;
@@ -245,6 +270,7 @@ function SpellPanel({ hero, updateHero, setup }: { hero: Hero; updateHero: HeroU
   }
   function removeSpell(index: number) {
     updateHero((current) => ({ ...current, spells: current.spells.filter((_, currentIndex) => currentIndex !== index) }));
+    setDetailIndex(null);
   }
   return (
     <section className="dsa-panel tab-panel">
@@ -260,24 +286,21 @@ function SpellPanel({ hero, updateHero, setup }: { hero: Hero; updateHero: HeroU
       )}
       {hero.spells.length ? (
         <div className="spell-grid">
-          {hero.spells.map((spell, index) => setup ? (
-            <article key={`${index}-${spell.name}`} className="spell-card spell-editor-card">
-              <label>Name<input value={spell.name} onChange={(event) => patchSpell(index, { name: event.target.value })} /></label>
-              <label>Probe<input value={spell.check} onChange={(event) => patchSpell(index, { check: event.target.value })} /></label>
-              <label>FW<input type="number" min={0} value={spell.value} onChange={(event) => patchSpell(index, { value: Math.max(0, Number(event.target.value)) })} /></label>
-              <label>Kosten<input value={spell.cost} onChange={(event) => patchSpell(index, { cost: event.target.value })} /></label>
-              <button type="button" className="equipment-delete" onClick={() => removeSpell(index)}>Zauber entfernen</button>
-            </article>
-          ) : (
-            <article key={`${index}-${spell.name}`} className="spell-card"><div><span>Zauber</span><strong>{spell.name}</strong></div><dl><div><dt>Probe</dt><dd>{spell.check || "–"}</dd></div><div><dt>FW</dt><dd>{spell.value}</dd></div><div><dt>Kosten</dt><dd>{spell.cost || "–"}</dd></div></dl></article>
+          {hero.spells.map((spell, index) => (
+            <button type="button" key={`${index}-${spell.name}`} className="spell-card spell-detail-card" onClick={() => setDetailIndex(index)}>
+              <div><span>Zauber</span><strong>{spell.name}</strong></div>
+              <dl><div><dt>Probe</dt><dd>{spell.check || "–"}</dd></div><div><dt>FW</dt><dd>{spell.value}</dd></div><div><dt>Kosten</dt><dd>{spell.cost || "–"}</dd></div></dl>
+              <small>Für Details öffnen →</small>
+            </button>
           ))}
         </div>
       ) : <p className="empty-state">Dieser Held beherrscht noch keine Zauber.</p>}
+      <SpellDetailModal spell={detailSpell} setup={setup} onHide={() => setDetailIndex(null)} onChange={(patch) => { if (detailIndex !== null) patchSpell(detailIndex, patch); }} onDelete={() => { if (detailIndex !== null) removeSpell(detailIndex); }} />
     </section>
   );
 }
 
-function EquipmentPanel({ hero, updateHero, setup }: { hero: Hero; updateHero: HeroUpdater; setup: boolean }) {
+function EquipmentPanel({ hero, updateHero, setup, onInspectItem }: { hero: Hero; updateHero: HeroUpdater; setup: boolean; onInspectItem: (itemId: string) => void }) {
   const [draft, setDraft] = useState({ name: "", quantity: 1, notes: "" });
   function addItem(event: FormEvent) {
     event.preventDefault();
@@ -285,12 +308,6 @@ function EquipmentPanel({ hero, updateHero, setup }: { hero: Hero; updateHero: H
     const item: EquipmentItem = { id: createId(), name: draft.name.trim(), quantity: Math.max(1, draft.quantity), notes: draft.notes.trim() };
     updateHero((current) => ({ ...current, equipment: [...current.equipment, item] }));
     setDraft({ name: "", quantity: 1, notes: "" });
-  }
-  function patchItem(id: string, patch: Partial<EquipmentItem>) {
-    updateHero((current) => ({ ...current, equipment: current.equipment.map((item) => item.id === id ? { ...item, ...patch } : item) }));
-  }
-  function removeItem(id: string) {
-    updateHero((current) => ({ ...current, equipment: current.equipment.filter((item) => item.id !== id) }));
   }
   return (
     <section className="dsa-panel tab-panel">
@@ -303,12 +320,8 @@ function EquipmentPanel({ hero, updateHero, setup }: { hero: Hero; updateHero: H
           <Button type="submit" className="dsa-primary-button">Hinzufügen</Button>
         </Form>
       )}
-      {setup ? (
-        <div className="equipment-editor-list">
-          {hero.equipment.map((item) => <article key={item.id} className="equipment-editor-row"><input className="equipment-name" value={item.name} onChange={(event) => patchItem(item.id, { name: event.target.value })} aria-label="Gegenstandsname" /><input className="equipment-quantity" type="number" min={1} value={item.quantity} onChange={(event) => patchItem(item.id, { quantity: Math.max(1, Number(event.target.value)) })} aria-label="Anzahl" /><input className="equipment-notes" value={item.notes} onChange={(event) => patchItem(item.id, { notes: event.target.value })} placeholder="Notiz" aria-label="Notiz" /><button type="button" className="equipment-delete" onClick={() => removeItem(item.id)}>Entfernen</button></article>)}
-        </div>
-      ) : hero.equipment.length ? (
-        <div className="equipment-list">{hero.equipment.map((item) => <div key={item.id}><span>{item.quantity}×</span><strong>{item.name}</strong>{item.notes && <small>{item.notes}</small>}</div>)}</div>
+      {hero.equipment.length ? (
+        <div className="equipment-detail-grid">{hero.equipment.map((item) => <button type="button" key={item.id} className="equipment-detail-card" onClick={() => onInspectItem(item.id)}><span>{item.quantity}×</span><div><strong>{item.name}</strong><small>{item.category || item.notes || "Keine weiteren Angaben"}</small></div><b>Details →</b></button>)}</div>
       ) : <p className="empty-state">Das Inventar ist noch leer.</p>}
     </section>
   );

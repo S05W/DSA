@@ -1,6 +1,7 @@
 import type { Hero } from "../models/Hero";
 import { createId } from "../utils/id";
 import { createDefaultTalents } from "./talents";
+import { createDefaultBody } from "./body";
 
 type HeroIdentity = Pick<Hero, "name" | "profession" | "species" | "culture" | "experienceLevel">;
 
@@ -50,5 +51,6 @@ export function createDefaultHero(ownerId: string, identity: Partial<HeroIdentit
     talents: createDefaultTalents(),
     spells: [],
     equipment: [],
+    body: createDefaultBody(),
   };
 }

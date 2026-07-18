@@ -22,6 +22,11 @@ export interface SpellValue {
   check: string;
   value: number;
   cost: string;
+  effect?: string;
+  range?: string;
+  duration?: string;
+  castingTime?: string;
+  notes?: string;
 }
 
 export interface EquipmentItem {
@@ -29,6 +34,35 @@ export interface EquipmentItem {
   name: string;
   quantity: number;
   notes: string;
+  description?: string;
+  category?: string;
+  weight?: string;
+  armor?: number;
+  value?: string;
+}
+
+export type BodyPartId = "head" | "torso" | "leftArm" | "rightArm" | "leftLeg" | "rightLeg";
+export type EquipmentSlotId = "head" | "neck" | "torso" | "back" | "mainHand" | "offHand" | "belt" | "legs" | "feet";
+
+export interface BodyPartState {
+  id: BodyPartId;
+  label: string;
+  damage: number;
+  maxDamage: number;
+  notes: string;
+}
+
+export interface StatusEffect {
+  id: string;
+  name: string;
+  level: number;
+  notes: string;
+}
+
+export interface BodyState {
+  parts: BodyPartState[];
+  statuses: StatusEffect[];
+  equipped: Partial<Record<EquipmentSlotId, string>>;
 }
 
 export interface Hero {
@@ -56,4 +90,5 @@ export interface Hero {
   talents: TalentValue[];
   spells: SpellValue[];
   equipment: EquipmentItem[];
+  body: BodyState;
 }

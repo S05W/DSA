@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { Hero } from "../models/Hero";
 import type { SessionUser } from "../models/User";
 import { storage } from "../services/storage";
+import { normalizeHero } from "../data/body";
 import { AppContext, type AppContextValue } from "./app-context";
 
 export function AppProvider({ children }: { children: ReactNode }) {
@@ -15,7 +16,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     void storage.getSession()
       .then(async (session) => {
         if (!active || !session) return;
-        const loadedHeroes = await storage.getHeroes();
+        const loadedHeroes = (await storage.getHeroes()).map(normalizeHero);
         if (active) {
           setUser(session);
           setHeroes(loadedHeroes);
@@ -31,13 +32,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     heroes,
     async login(username, password) {
       const session = await storage.login(username, password);
-      const loadedHeroes = await storage.getHeroes();
+      const loadedHeroes = (await storage.getHeroes()).map(normalizeHero);
       setHeroes(loadedHeroes);
       setUser(session);
     },
     async register(username, password) {
       const session = await storage.register(username, password);
-      const loadedHeroes = await storage.getHeroes();
+      const loadedHeroes = (await storage.getHeroes()).map(normalizeHero);
       setHeroes(loadedHeroes);
       setUser(session);
     },
