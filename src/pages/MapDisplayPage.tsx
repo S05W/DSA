@@ -14,5 +14,5 @@ export default function MapDisplayPage() {
     const interval = window.setInterval(() => { void load(); }, 2000);
     return () => { window.clearTimeout(initial); window.clearInterval(interval); };
   }, [load]);
-  return <main className="map-display-page"><div className="display-toolbar"><span>Gemeinsame Kartenansicht</span><button type="button" onClick={() => void document.documentElement.requestFullscreen()}>Vollbild</button></div>{error ? <p>{error}</p> : !snapshot ? <p>Karte wird geladen …</p> : !snapshot.imageVersion ? <p>Der Meister hat noch keine Karte hochgeladen.</p> : <MapStage snapshot={snapshot} fogMode="display" />}</main>;
+  return <main className="map-display-page"><div className="display-toolbar"><span>{snapshot?.name ?? "Gemeinsame Kartenansicht"}</span><button type="button" onClick={() => void document.documentElement.requestFullscreen()}>Vollbild</button></div>{error ? <p>{error}</p> : !snapshot ? <p>Karte wird geladen …</p> : !snapshot.imageVersion ? <p>Der Meister hat für „{snapshot.name}“ noch kein Kartenbild hochgeladen.</p> : <MapStage snapshot={snapshot} fogMode="display" />}</main>;
 }

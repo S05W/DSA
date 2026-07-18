@@ -37,7 +37,11 @@ Nach einer Rollenänderung muss sich der Benutzer einmal ab- und wieder anmelden
 
 ## Karten- und Fernseheransicht
 
-Unter `/meister/karte` kann der Meister eine PNG-, JPG- oder WebP-Karte bis 20 MB hochladen. Unbekannte Bereiche liegen in der Meisteransicht unter einem grauen Schleier. Mit dem Werkzeug „Bereich aufdecken“ werden rechteckige Kartenausschnitte freigegeben; einzelne Schritte können zurückgenommen oder die gesamte Karte wieder verborgen werden. Aktive Heldentokens lassen sich per Drag-and-drop positionieren.
+Unter `/meister/karte` verwaltet der Meister mehrere benannte Karten und bestimmt, welche davon gerade für Spieler und Fernseher aktiv ist. Eine bereits vorhandene Einzelkarte wird beim ersten Start automatisch samt Nebel und Tokenpositionen als „Karte 1“ übernommen. Kartenbilder dürfen PNG, JPG oder WebP und höchstens 20 MB groß sein.
+
+Der Nebel lässt sich mit runden Pinseln oder Rechtecken aufdecken und wieder verbergen. Die Pinselgröße ist einstellbar; Rückgängig, Wiederholen, „Alles aufdecken“ und „Alles verbergen“ ergänzen die Werkzeugleiste. Der Zoom reicht von 10 bis 300 Prozent und die Schaltfläche „An Bildschirm anpassen“ zeigt auch große oder hochformatige Karten vollständig.
+
+Öffentliche oder geheime Pins markieren Shops, Tavernen, Orte, NPCs, Quests, Schätze, Übergänge und Fallen. Der Meister kann außerdem sichtbare oder geheime Monster mit eigenen LeP, AsP, Notizen und Tokenbildern einsetzen und bewegen. Aktive Helden und Monster zeigen je nach Karteneinstellung genaue LeP-/AsP-Werte, nur Balken oder keine Ressourcen. Geheime Pins und Monster bleiben in der Spieleransicht verborgen.
 
 Jeder Spieler kann im Heldenbogen ein eigenes PNG-, JPG- oder WebP-Token bis 2 MB hochladen. Die bildschirmfüllende Route `/karte/anzeige` ist für einen Fernseher gedacht, aktualisiert sich automatisch und zeigt unbekannte Bereiche schwarz. Die Anzeige setzt aus Sicherheitsgründen eine angemeldete Sitzung voraus.
 
@@ -129,5 +133,5 @@ Die Dateien `.env`, `data/` und `*.db` werden bewusst nicht versioniert.
 - Passwörter werden mit `scrypt` und individuellem Salt gespeichert.
 - Sitzungen verwenden zufällige Token in `HttpOnly`- und `SameSite=Strict`-Cookies.
 - Die API lauscht nur auf `127.0.0.1`; Zugriffe laufen über Nginx.
-- Karten dürfen höchstens 20 MB und Heldentokens höchstens 2 MB groß sein. Der Server prüft Dateityp und die Signatur von PNG-, JPG- und WebP-Dateien.
+- Karten dürfen höchstens 20 MB sowie Helden- und Monstertokens höchstens 2 MB groß sein. Der Server prüft Dateityp und die Signatur von PNG-, JPG- und WebP-Dateien.
 - Für einen späteren Internetzugriff muss HTTPS eingerichtet und `COOKIE_SECURE=true` gesetzt werden.

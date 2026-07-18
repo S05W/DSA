@@ -1,6 +1,6 @@
 import type { Hero } from "../models/Hero";
 import type { MasterHeroRecord, SessionUser } from "../models/User";
-import type { FogRect, GameMapSnapshot } from "../models/Map";
+import type { FogShape, GameMapSnapshot, GameMapSummary, MapMonster, MapPin, ResourceDisplay } from "../models/Map";
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const response = await fetch(`/api${path}`, {
@@ -97,18 +97,82 @@ export const storage = {
     return result.map;
   },
 
-  async uploadGameMap(file: File): Promise<GameMapSnapshot> {
-    const result = await request<{ map: GameMapSnapshot }>("/master/map/image", { method: "PUT", headers: { "Content-Type": file.type }, body: file });
+  async getMasterMaps(): Promise<GameMapSummary[]> {
+    const result = await request<{ maps: GameMapSummary[] }>("/master/maps");
+    return result.maps;
+  },
+
+  async getMasterMap(mapId: string): Promise<GameMapSnapshot> {
+    const result = await request<{ map: GameMapSnapshot }>(`/master/maps/${encodeURIComponent(mapId)}`);
     return result.map;
   },
 
-  async saveMapFog(revealed: FogRect[]): Promise<GameMapSnapshot> {
-    const result = await request<{ map: GameMapSnapshot }>("/master/map/fog", { method: "PUT", body: JSON.stringify({ revealed }) });
+  async createGameMap(name: string): Promise<GameMapSnapshot> {
+    const result = await request<{ map: GameMapSnapshot }>("/master/maps", { method: "POST", body: JSON.stringify({ name }) });
     return result.map;
   },
 
-  async saveMapTokenPosition(heroId: string, x: number, y: number): Promise<GameMapSnapshot> {
-    const result = await request<{ map: GameMapSnapshot }>(`/master/map/tokens/${encodeURIComponent(heroId)}`, { method: "PUT", body: JSON.stringify({ x, y }) });
+  async updateGameMap(mapId: string, input: { name?: string; resourceDisplay?: ResourceDisplay }): Promise<GameMapSnapshot> {
+    const result = await request<{ map: GameMapSnapshot }>(`/master/maps/${encodeURIComponent(mapId)}`, { method: "PUT", body: JSON.stringify(input) });
+    return result.map;
+  },
+
+  async activateGameMap(mapId: string): Promise<GameMapSnapshot> {
+    const result = await request<{ map: GameMapSnapshot }>(`/master/maps/${encodeURIComponent(mapId)}/activate`, { method: "PUT" });
+    return result.map;
+  },
+
+  async deleteGameMap(mapId: string): Promise<void> {
+    await request<{ ok: true }>(`/master/maps/${encodeURIComponent(mapId)}`, { method: "DELETE" });
+  },
+
+  async uploadGameMap(mapId: string, file: File): Promise<GameMapSnapshot> {
+    const result = await request<{ map: GameMapSnapshot }>(`/master/maps/${encodeURIComponent(mapId)}/image`, { method: "PUT", headers: { "Content-Type": file.type }, body: file });
+    return result.map;
+  },
+
+  async saveMapFog(mapId: string, fog: FogShape[]): Promise<GameMapSnapshot> {
+    const result = await request<{ map: GameMapSnapshot }>(`/master/maps/${encodeURIComponent(mapId)}/fog`, { method: "PUT", body: JSON.stringify({ fog }) });
+    return result.map;
+  },
+
+  async saveMapEntityPosition(mapId: string, kind: "hero" | "monster", entityId: string, x: number, y: number): Promise<GameMapSnapshot> {
+    const result = await request<{ map: GameMapSnapshot }>(`/master/maps/${encodeURIComponent(mapId)}/${kind === "hero" ? "heroes" : "monsters"}/${encodeURIComponent(entityId)}/position`, { method: "PUT", body: JSON.stringify({ x, y }) });
+    return result.map;
+  },
+
+  async createMapPin(mapId: string, pin: Omit<MapPin, "id">): Promise<GameMapSnapshot> {
+    const result = await request<{ map: GameMapSnapshot }>(`/master/maps/${encodeURIComponent(mapId)}/pins`, { method: "POST", body: JSON.stringify(pin) });
+    return result.map;
+  },
+
+  async updateMapPin(mapId: string, pin: MapPin): Promise<GameMapSnapshot> {
+    const result = await request<{ map: GameMapSnapshot }>(`/master/maps/${encodeURIComponent(mapId)}/pins/${encodeURIComponent(pin.id)}`, { method: "PUT", body: JSON.stringify(pin) });
+    return result.map;
+  },
+
+  async deleteMapPin(mapId: string, pinId: string): Promise<GameMapSnapshot> {
+    const result = await request<{ map: GameMapSnapshot }>(`/master/maps/${encodeURIComponent(mapId)}/pins/${encodeURIComponent(pinId)}`, { method: "DELETE" });
+    return result.map;
+  },
+
+  async createMapMonster(mapId: string, monster: Omit<MapMonster, "id" | "kind" | "tokenVersion">): Promise<GameMapSnapshot> {
+    const result = await request<{ map: GameMapSnapshot }>(`/master/maps/${encodeURIComponent(mapId)}/monsters`, { method: "POST", body: JSON.stringify(monster) });
+    return result.map;
+  },
+
+  async updateMapMonster(mapId: string, monster: MapMonster): Promise<GameMapSnapshot> {
+    const result = await request<{ map: GameMapSnapshot }>(`/master/maps/${encodeURIComponent(mapId)}/monsters/${encodeURIComponent(monster.id)}`, { method: "PUT", body: JSON.stringify(monster) });
+    return result.map;
+  },
+
+  async deleteMapMonster(mapId: string, monsterId: string): Promise<GameMapSnapshot> {
+    const result = await request<{ map: GameMapSnapshot }>(`/master/maps/${encodeURIComponent(mapId)}/monsters/${encodeURIComponent(monsterId)}`, { method: "DELETE" });
+    return result.map;
+  },
+
+  async uploadMonsterToken(monsterId: string, file: File): Promise<GameMapSnapshot> {
+    const result = await request<{ map: GameMapSnapshot }>(`/master/monsters/${encodeURIComponent(monsterId)}/token`, { method: "PUT", headers: { "Content-Type": file.type }, body: file });
     return result.map;
   },
 };
