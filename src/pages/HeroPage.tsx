@@ -169,7 +169,7 @@ function HeroTokenPanel({ hero, updateHero }: { hero: Hero; updateHero: HeroUpda
   const [error, setError] = useState("");
   async function upload(file: File | undefined) {
     if (!file) return;
-    if (file.type !== "image/png") { setError("Bitte wähle eine PNG-Datei aus."); return; }
+    if (!["image/png", "image/jpeg", "image/webp"].includes(file.type)) { setError("Bitte wähle eine PNG-, JPG- oder WebP-Datei aus."); return; }
     if (file.size > 2 * 1024 * 1024) { setError("Das Token darf höchstens 2 MB groß sein."); return; }
     setUploading(true);
     setError("");
@@ -182,7 +182,7 @@ function HeroTokenPanel({ hero, updateHero }: { hero: Hero; updateHero: HeroUpda
       setUploading(false);
     }
   }
-  return <article className="dsa-panel hero-token-panel"><div className="panel-heading"><span>Karten-Token</span><small>PNG · maximal 2 MB</small></div><div className="hero-token-content">{hero.mapTokenVersion ? <img src={`/api/heroes/${encodeURIComponent(hero.id)}/token?v=${hero.mapTokenVersion}`} alt={`Karten-Token von ${hero.name}`} /> : <div className="token-placeholder">{hero.initials}</div>}<div><p>Dieses Bild stellt deinen Helden später auf der Karte dar.</p><label className="token-upload-button">{uploading ? "Wird hochgeladen …" : hero.mapTokenVersion ? "Token ersetzen" : "PNG-Token hochladen"}<input type="file" accept="image/png,.png" disabled={uploading} onChange={(event) => { void upload(event.target.files?.[0]); event.target.value = ""; }} /></label></div></div>{error && <p className="form-error">{error}</p>}</article>;
+  return <article className="dsa-panel hero-token-panel"><div className="panel-heading"><span>Karten-Token</span><small>PNG, JPG oder WebP · maximal 2 MB</small></div><div className="hero-token-content">{hero.mapTokenVersion ? <img src={`/api/heroes/${encodeURIComponent(hero.id)}/token?v=${hero.mapTokenVersion}`} alt={`Karten-Token von ${hero.name}`} /> : <div className="token-placeholder">{hero.initials}</div>}<div><p>Dieses Bild stellt deinen Helden später auf der Karte dar.</p><label className="token-upload-button">{uploading ? "Wird hochgeladen …" : hero.mapTokenVersion ? "Token ersetzen" : "Token hochladen"}<input type="file" accept="image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp" disabled={uploading} onChange={(event) => { void upload(event.target.files?.[0]); event.target.value = ""; }} /></label></div></div>{error && <p className="form-error">{error}</p>}</article>;
 }
 
 function HeroSetupPanel({ hero, updateHero }: { hero: Hero; updateHero: HeroUpdater }) {

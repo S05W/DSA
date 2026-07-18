@@ -37,6 +37,6 @@ export default function MasterDashboardPage() {
       <div className="master-resource-row"><article><span>LeP</span><strong>{hero.lifePoints}</strong><small>/ {hero.maxLifePoints}</small></article><article><span>AsP</span><strong>{hero.astralPoints}</strong><small>/ {hero.maxAstralPoints}</small></article><article><span>Status</span><strong>{hero.body.statuses.length}</strong><small>Effekte</small></article></div>
       <footer><span>Zuletzt aktualisiert: {new Date(updatedAt).toLocaleTimeString("de-DE")}</span><b>Heldenansicht öffnen →</b></footer>
     </Link>)}</section> : <section className="dsa-panel master-empty"><span className="live-indicator inactive" /><h2>Gerade spielt noch kein Held</h2><p>Ein Spieler erscheint hier, sobald er in seinem Heldenbogen „In der Sitzung“ aktiviert.</p></section>}
-    <Link to="/meister/karte" className="dsa-panel map-roadmap"><div><span>Kartenansicht</span><small>PNG, Nebel und Heldentokens</small></div><p>Öffne den Karteneditor, decke erkundete Bereiche auf und positioniere die aktiven Helden.</p><b>Karteneditor öffnen →</b></Link>
+    <Link to="/meister/karte" className="dsa-panel map-roadmap"><div><span>Kartenansicht</span><small>PNG/JPG/WebP, Nebel und Heldentokens</small></div><p>Öffne den Karteneditor, decke erkundete Bereiche auf und positioniere die aktiven Helden.</p><b>Karteneditor öffnen →</b></Link>
   </main></div>;
 }

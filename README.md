@@ -37,9 +37,9 @@ Nach einer Rollenänderung muss sich der Benutzer einmal ab- und wieder anmelden
 
 ## Karten- und Fernseheransicht
 
-Unter `/meister/karte` kann der Meister eine PNG-Karte bis 20 MB hochladen. Unbekannte Bereiche liegen in der Meisteransicht unter einem grauen Schleier. Mit dem Werkzeug „Bereich aufdecken“ werden rechteckige Kartenausschnitte freigegeben; einzelne Schritte können zurückgenommen oder die gesamte Karte wieder verborgen werden. Aktive Heldentokens lassen sich per Drag-and-drop positionieren.
+Unter `/meister/karte` kann der Meister eine PNG-, JPG- oder WebP-Karte bis 20 MB hochladen. Unbekannte Bereiche liegen in der Meisteransicht unter einem grauen Schleier. Mit dem Werkzeug „Bereich aufdecken“ werden rechteckige Kartenausschnitte freigegeben; einzelne Schritte können zurückgenommen oder die gesamte Karte wieder verborgen werden. Aktive Heldentokens lassen sich per Drag-and-drop positionieren.
 
-Jeder Spieler kann im Heldenbogen ein eigenes PNG-Token bis 2 MB hochladen. Die bildschirmfüllende Route `/karte/anzeige` ist für einen Fernseher gedacht, aktualisiert sich automatisch und zeigt unbekannte Bereiche schwarz. Die Anzeige setzt aus Sicherheitsgründen eine angemeldete Sitzung voraus.
+Jeder Spieler kann im Heldenbogen ein eigenes PNG-, JPG- oder WebP-Token bis 2 MB hochladen. Die bildschirmfüllende Route `/karte/anzeige` ist für einen Fernseher gedacht, aktualisiert sich automatisch und zeigt unbekannte Bereiche schwarz. Die Anzeige setzt aus Sicherheitsgründen eine angemeldete Sitzung voraus.
 
 ## Voraussetzungen
 
@@ -107,7 +107,7 @@ Erwartete Antwort:
 
 ## Daten und Backups
 
-Die Datenbank und hochgeladenen PNG-Dateien liegen auf dem Pi unter:
+Die Datenbank und hochgeladenen Bilddateien liegen auf dem Pi unter:
 
 ```text
 /home/simon/apps/DSA/data/dsa.db
@@ -129,5 +129,5 @@ Die Dateien `.env`, `data/` und `*.db` werden bewusst nicht versioniert.
 - Passwörter werden mit `scrypt` und individuellem Salt gespeichert.
 - Sitzungen verwenden zufällige Token in `HttpOnly`- und `SameSite=Strict`-Cookies.
 - Die API lauscht nur auf `127.0.0.1`; Zugriffe laufen über Nginx.
-- Karten dürfen höchstens 20 MB und Heldentokens höchstens 2 MB groß sein. Der Server prüft Dateityp und PNG-Signatur.
+- Karten dürfen höchstens 20 MB und Heldentokens höchstens 2 MB groß sein. Der Server prüft Dateityp und die Signatur von PNG-, JPG- und WebP-Dateien.
 - Für einen späteren Internetzugriff muss HTTPS eingerichtet und `COOKIE_SECURE=true` gesetzt werden.

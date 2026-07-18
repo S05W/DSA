@@ -188,8 +188,17 @@ async function readBinary(request, maximumBytes) {
   return Buffer.concat(chunks);
 }
 
-function isPng(buffer) {
-  return buffer.length >= 8 && buffer.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
+function imageMimeType(buffer) {
+  if (buffer.length >= 8 && buffer.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))) {
+    return "image/png";
+  }
+  if (buffer.length >= 4 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer.at(-2) === 0xff && buffer.at(-1) === 0xd9) {
+    return "image/jpeg";
+  }
+  if (buffer.length >= 12 && buffer.subarray(0, 4).toString("ascii") === "RIFF" && buffer.subarray(8, 12).toString("ascii") === "WEBP") {
+    return "image/webp";
+  }
+  return null;
 }
 
 function writeAtomic(path, buffer) {
@@ -203,11 +212,13 @@ function tokenPathFor(heroId) {
   return resolve(tokenDirectory, fileName);
 }
 
-function sendPng(response, path, version) {
-  if (!existsSync(path)) return json(response, 404, { error: "PNG-Datei nicht gefunden." });
+function sendImage(response, path, version) {
+  if (!existsSync(path)) return json(response, 404, { error: "Bilddatei nicht gefunden." });
   const data = readFileSync(path);
+  const mimeType = imageMimeType(data);
+  if (!mimeType) return json(response, 500, { error: "Die gespeicherte Bilddatei ist ungültig." });
   response.writeHead(200, {
-    "Content-Type": "image/png",
+    "Content-Type": mimeType,
     "Content-Length": data.length,
     "Cache-Control": "private, max-age=31536000, immutable",
     "ETag": `\"${version}\"`,
@@ -356,7 +367,7 @@ const server = createServer(async (request, response) => {
     if (request.method === "GET" && url.pathname === "/api/map/image") {
       if (!requireUser(request, response)) return;
       const state = queries.mapState.get();
-      return sendPng(response, mapImagePath, state.image_version);
+      return sendImage(response, mapImagePath, state.image_version);
     }
     const heroTokenRoute = url.pathname.match(/^\/api\/heroes\/([^/]+)\/token$/);
     if (request.method === "GET" && heroTokenRoute) {
@@ -368,7 +379,7 @@ const server = createServer(async (request, response) => {
       if (row.user_id !== user.id && user.role !== "master" && row.active !== 1) return json(response, 403, { error: "Token ist nicht zugänglich." });
       const hero = JSON.parse(row.data);
       if (!hero.mapTokenVersion) return json(response, 404, { error: "Für diesen Helden wurde noch kein Token hochgeladen." });
-      return sendPng(response, tokenPathFor(heroId), hero.mapTokenVersion);
+      return sendImage(response, tokenPathFor(heroId), hero.mapTokenVersion);
     }
     if (request.method === "PUT" && heroTokenRoute) {
       const user = requireUser(request, response);
@@ -376,9 +387,10 @@ const server = createServer(async (request, response) => {
       const heroId = decodeURIComponent(heroTokenRoute[1]);
       const row = queries.heroById.get(user.id, heroId);
       if (!row) return json(response, 404, { error: "Held nicht gefunden." });
-      if (!String(request.headers["content-type"] ?? "").toLowerCase().startsWith("image/png")) return json(response, 415, { error: "Das Heldentoken muss eine PNG-Datei sein." });
+      const declaredType = String(request.headers["content-type"] ?? "").toLowerCase().split(";", 1)[0];
+      if (!["image/png", "image/jpeg", "image/jpg", "image/webp"].includes(declaredType)) return json(response, 415, { error: "Das Heldentoken muss eine PNG-, JPG- oder WebP-Datei sein." });
       const image = await readBinary(request, 2 * 1024 * 1024);
-      if (!isPng(image)) return json(response, 400, { error: "Die Datei ist kein gültiges PNG." });
+      if (!imageMimeType(image)) return json(response, 400, { error: "Die Datei ist kein gültiges PNG, JPG oder WebP." });
       writeAtomic(tokenPathFor(heroId), image);
       const hero = JSON.parse(row.data);
       const updatedHero = { ...hero, mapTokenVersion: Date.now() };
@@ -387,9 +399,10 @@ const server = createServer(async (request, response) => {
     }
     if (request.method === "PUT" && url.pathname === "/api/master/map/image") {
       if (!requireMaster(request, response)) return;
-      if (!String(request.headers["content-type"] ?? "").toLowerCase().startsWith("image/png")) return json(response, 415, { error: "Die Karte muss eine PNG-Datei sein." });
+      const declaredType = String(request.headers["content-type"] ?? "").toLowerCase().split(";", 1)[0];
+      if (!["image/png", "image/jpeg", "image/jpg", "image/webp"].includes(declaredType)) return json(response, 415, { error: "Die Karte muss eine PNG-, JPG- oder WebP-Datei sein." });
       const image = await readBinary(request, 20 * 1024 * 1024);
-      if (!isPng(image)) return json(response, 400, { error: "Die Datei ist kein gültiges PNG." });
+      if (!imageMimeType(image)) return json(response, 400, { error: "Die Datei ist kein gültiges PNG, JPG oder WebP." });
       writeAtomic(mapImagePath, image);
       const version = Date.now();
       queries.saveMapImageVersion.run(version, new Date().toISOString());

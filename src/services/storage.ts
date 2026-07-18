@@ -88,7 +88,7 @@ export const storage = {
   },
 
   async uploadHeroToken(heroId: string, file: File): Promise<Hero> {
-    const result = await request<{ hero: Hero }>(`/heroes/${encodeURIComponent(heroId)}/token`, { method: "PUT", headers: { "Content-Type": "image/png" }, body: file });
+    const result = await request<{ hero: Hero }>(`/heroes/${encodeURIComponent(heroId)}/token`, { method: "PUT", headers: { "Content-Type": file.type }, body: file });
     return result.hero;
   },
 
@@ -98,7 +98,7 @@ export const storage = {
   },
 
   async uploadGameMap(file: File): Promise<GameMapSnapshot> {
-    const result = await request<{ map: GameMapSnapshot }>("/master/map/image", { method: "PUT", headers: { "Content-Type": "image/png" }, body: file });
+    const result = await request<{ map: GameMapSnapshot }>("/master/map/image", { method: "PUT", headers: { "Content-Type": file.type }, body: file });
     return result.map;
   },
 
