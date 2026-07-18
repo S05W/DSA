@@ -31,6 +31,9 @@ function Sidebar({ heroName }: SidebarProps) {
           {user?.role === "master" && <NavLink to="/meister" className={({ isActive }) => `sidebar-link${isActive ? " active" : ""}`}>
             <span className="sidebar-icon">M</span>Meisteransicht
           </NavLink>}
+          {user?.role === "master" && <NavLink to="/meister/karte" className={({ isActive }) => `sidebar-link${isActive ? " active" : ""}`}>
+            <span className="sidebar-icon">K</span>Karteneditor
+          </NavLink>}
           {heroName && <div className="sidebar-context"><span>Geöffneter Held</span><strong>{heroName}</strong></div>}
         </nav>
       </div>

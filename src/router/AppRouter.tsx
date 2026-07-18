@@ -6,6 +6,8 @@ import LoginPage from "../pages/LoginPage";
 import DicePage from "../pages/DicePage";
 import MasterDashboardPage from "../pages/MasterDashboardPage";
 import MasterHeroPage from "../pages/MasterHeroPage";
+import MasterMapPage from "../pages/MasterMapPage";
+import MapDisplayPage from "../pages/MapDisplayPage";
 
 function Protected({ children }: { children: React.ReactNode }) {
   const { user } = useApp();
@@ -27,6 +29,8 @@ function AppRouter() {
       <Route path="/wuerfel" element={<Protected><DicePage /></Protected>} />
       <Route path="/meister" element={<MasterProtected><MasterDashboardPage /></MasterProtected>} />
       <Route path="/meister/helden/:heroId" element={<MasterProtected><MasterHeroPage /></MasterProtected>} />
+      <Route path="/meister/karte" element={<MasterProtected><MasterMapPage /></MasterProtected>} />
+      <Route path="/karte/anzeige" element={<Protected><MapDisplayPage /></Protected>} />
       <Route path="/held" element={<Navigate to="/" replace />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

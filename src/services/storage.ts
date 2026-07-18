@@ -1,5 +1,6 @@
 import type { Hero } from "../models/Hero";
 import type { MasterHeroRecord, SessionUser } from "../models/User";
+import type { FogRect, GameMapSnapshot } from "../models/Map";
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const response = await fetch(`/api${path}`, {
@@ -84,5 +85,30 @@ export const storage = {
   async removeMasterStatus(heroId: string, statusId: string): Promise<Hero> {
     const result = await request<{ hero: Hero }>(`/master/heroes/${encodeURIComponent(heroId)}/statuses/${encodeURIComponent(statusId)}`, { method: "DELETE" });
     return result.hero;
+  },
+
+  async uploadHeroToken(heroId: string, file: File): Promise<Hero> {
+    const result = await request<{ hero: Hero }>(`/heroes/${encodeURIComponent(heroId)}/token`, { method: "PUT", headers: { "Content-Type": "image/png" }, body: file });
+    return result.hero;
+  },
+
+  async getGameMap(): Promise<GameMapSnapshot> {
+    const result = await request<{ map: GameMapSnapshot }>("/map");
+    return result.map;
+  },
+
+  async uploadGameMap(file: File): Promise<GameMapSnapshot> {
+    const result = await request<{ map: GameMapSnapshot }>("/master/map/image", { method: "PUT", headers: { "Content-Type": "image/png" }, body: file });
+    return result.map;
+  },
+
+  async saveMapFog(revealed: FogRect[]): Promise<GameMapSnapshot> {
+    const result = await request<{ map: GameMapSnapshot }>("/master/map/fog", { method: "PUT", body: JSON.stringify({ revealed }) });
+    return result.map;
+  },
+
+  async saveMapTokenPosition(heroId: string, x: number, y: number): Promise<GameMapSnapshot> {
+    const result = await request<{ map: GameMapSnapshot }>(`/master/map/tokens/${encodeURIComponent(heroId)}`, { method: "PUT", body: JSON.stringify({ x, y }) });
+    return result.map;
   },
 };

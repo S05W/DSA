@@ -133,6 +133,7 @@ export interface Hero {
   id: string;
   ownerId: string;
   sessionActive: boolean;
+  mapTokenVersion?: number;
   name: string;
   title?: string;
   profession: string;

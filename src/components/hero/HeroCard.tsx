@@ -16,6 +16,7 @@ function HeroCard({ hero, onDelete }: HeroCardProps) {
     <Card className={`hero-card hero-card-${hero.accent}`}>
       <div className="hero-card-visual">
         <div className="hero-card-pattern" />
+        <button type="button" className="hero-card-delete" title={`${hero.name} löschen`} aria-label={`${hero.name} löschen`} onClick={() => onDelete(hero)}>×</button>
         <span className="hero-card-initials">{hero.initials}</span>
         <Badge bg="dark" className="hero-card-level">
           {hero.experienceLevel}
@@ -35,7 +36,6 @@ function HeroCard({ hero, onDelete }: HeroCardProps) {
         <Link className="hero-card-link" to={`/helden/${hero.id}`}>
           Heldenbogen öffnen <span aria-hidden="true">→</span>
         </Link>
-        <button type="button" className="hero-card-delete" onClick={() => onDelete(hero)}>Held löschen</button>
       </Card.Body>
     </Card>
   );

@@ -1,5 +1,5 @@
 import { createServer } from "node:http";
-import { mkdirSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, renameSync, unlinkSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { promisify } from "node:util";
 import { randomBytes, scrypt as scryptCallback, timingSafeEqual, createHash, randomUUID } from "node:crypto";
@@ -9,9 +9,15 @@ const scrypt = promisify(scryptCallback);
 const host = process.env.HOST ?? "127.0.0.1";
 const port = Number(process.env.PORT ?? 3000);
 const databasePath = resolve(process.env.DATABASE_PATH ?? "data/dsa.db");
+const dataDirectory = dirname(databasePath);
+const mapDirectory = resolve(dataDirectory, "uploads", "maps");
+const tokenDirectory = resolve(dataDirectory, "uploads", "tokens");
+const mapImagePath = resolve(mapDirectory, "current.png");
 const sessionLifetimeMs = 30 * 24 * 60 * 60 * 1000;
 
 mkdirSync(dirname(databasePath), { recursive: true });
+mkdirSync(mapDirectory, { recursive: true });
+mkdirSync(tokenDirectory, { recursive: true });
 const database = new DatabaseSync(databasePath);
 database.exec(`
   PRAGMA journal_mode = WAL;
@@ -27,6 +33,23 @@ database.exec(`
     token_hash TEXT PRIMARY KEY,
     user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     expires_at INTEGER NOT NULL
+  );
+`);
+
+database.exec(`
+  CREATE TABLE IF NOT EXISTS map_state (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    image_version INTEGER NOT NULL DEFAULT 0,
+    revealed_data TEXT NOT NULL DEFAULT '[]',
+    updated_at TEXT NOT NULL
+  );
+  INSERT OR IGNORE INTO map_state (id, image_version, revealed_data, updated_at)
+  VALUES (1, 0, '[]', '1970-01-01T00:00:00.000Z');
+  CREATE TABLE IF NOT EXISTS map_tokens (
+    hero_id TEXT PRIMARY KEY,
+    x REAL NOT NULL DEFAULT 0.5,
+    y REAL NOT NULL DEFAULT 0.5,
+    updated_at TEXT NOT NULL
   );
 `);
 
@@ -113,6 +136,22 @@ const queries = {
     WHERE heroes.hero_id = ?
   `),
   saveHeroForMaster: database.prepare("UPDATE heroes SET data = ?, updated_at = ? WHERE hero_id = ?"),
+  heroForToken: database.prepare("SELECT data, user_id, active FROM heroes WHERE hero_id = ?"),
+  mapState: database.prepare("SELECT image_version, revealed_data, updated_at FROM map_state WHERE id = 1"),
+  saveMapImageVersion: database.prepare("UPDATE map_state SET image_version = ?, updated_at = ? WHERE id = 1"),
+  saveMapFog: database.prepare("UPDATE map_state SET revealed_data = ?, updated_at = ? WHERE id = 1"),
+  activeMapTokens: database.prepare(`
+    SELECT heroes.hero_id, heroes.data, users.username, COALESCE(map_tokens.x, 0.5) AS x, COALESCE(map_tokens.y, 0.5) AS y
+    FROM heroes JOIN users ON users.id = heroes.user_id
+    LEFT JOIN map_tokens ON map_tokens.hero_id = heroes.hero_id
+    WHERE heroes.active = 1
+    ORDER BY users.username, heroes.created_at
+  `),
+  saveMapTokenPosition: database.prepare(`
+    INSERT INTO map_tokens (hero_id, x, y, updated_at) VALUES (?, ?, ?, ?)
+    ON CONFLICT(hero_id) DO UPDATE SET x = excluded.x, y = excluded.y, updated_at = excluded.updated_at
+  `),
+  deleteMapTokenPosition: database.prepare("DELETE FROM map_tokens WHERE hero_id = ?"),
 };
 
 function json(response, status, body, extraHeaders = {}) {
@@ -133,6 +172,77 @@ async function readBody(request) {
   }
   if (!value) return {};
   try { return JSON.parse(value); } catch { throw new Error("INVALID_JSON"); }
+}
+
+async function readBinary(request, maximumBytes) {
+  const declaredLength = Number(request.headers["content-length"] ?? 0);
+  if (declaredLength > maximumBytes) throw new Error("PAYLOAD_TOO_LARGE");
+  const chunks = [];
+  let size = 0;
+  for await (const chunk of request) {
+    const buffer = Buffer.from(chunk);
+    size += buffer.length;
+    if (size > maximumBytes) throw new Error("PAYLOAD_TOO_LARGE");
+    chunks.push(buffer);
+  }
+  return Buffer.concat(chunks);
+}
+
+function isPng(buffer) {
+  return buffer.length >= 8 && buffer.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
+}
+
+function writeAtomic(path, buffer) {
+  const temporaryPath = `${path}.${process.pid}.tmp`;
+  writeFileSync(temporaryPath, buffer, { mode: 0o600 });
+  renameSync(temporaryPath, path);
+}
+
+function tokenPathFor(heroId) {
+  const fileName = `${createHash("sha256").update(heroId).digest("hex")}.png`;
+  return resolve(tokenDirectory, fileName);
+}
+
+function sendPng(response, path, version) {
+  if (!existsSync(path)) return json(response, 404, { error: "PNG-Datei nicht gefunden." });
+  const data = readFileSync(path);
+  response.writeHead(200, {
+    "Content-Type": "image/png",
+    "Content-Length": data.length,
+    "Cache-Control": "private, max-age=31536000, immutable",
+    "ETag": `\"${version}\"`,
+    "X-Content-Type-Options": "nosniff",
+  });
+  response.end(data);
+}
+
+function mapSnapshot() {
+  const state = queries.mapState.get();
+  let revealed = [];
+  try { revealed = JSON.parse(state.revealed_data); } catch { revealed = []; }
+  const tokens = queries.activeMapTokens.all().map((row) => {
+    const hero = JSON.parse(row.data);
+    return {
+      heroId: row.hero_id,
+      heroName: hero.name,
+      initials: hero.initials,
+      username: row.username,
+      x: row.x,
+      y: row.y,
+      tokenVersion: Number(hero.mapTokenVersion ?? 0),
+    };
+  });
+  return { imageVersion: state.image_version, updatedAt: state.updated_at, revealed, tokens };
+}
+
+function safeFogRect(rect) {
+  if (!rect || typeof rect !== "object") return null;
+  const x = Math.max(0, Math.min(1, Number(rect.x)));
+  const y = Math.max(0, Math.min(1, Number(rect.y)));
+  const width = Math.max(0, Math.min(1 - x, Number(rect.width)));
+  const height = Math.max(0, Math.min(1 - y, Number(rect.height)));
+  if (![x, y, width, height].every(Number.isFinite) || width < 0.002 || height < 0.002) return null;
+  return { id: typeof rect.id === "string" ? rect.id.slice(0, 80) : randomUUID(), x, y, width, height };
 }
 
 function parseCookies(request) {
@@ -239,6 +349,73 @@ const server = createServer(async (request, response) => {
       if (token) queries.deleteSession.run(tokenHash(token));
       return json(response, 200, { ok: true }, { "Set-Cookie": sessionCookie("", 0) });
     }
+    if (request.method === "GET" && url.pathname === "/api/map") {
+      if (!requireUser(request, response)) return;
+      return json(response, 200, { map: mapSnapshot() });
+    }
+    if (request.method === "GET" && url.pathname === "/api/map/image") {
+      if (!requireUser(request, response)) return;
+      const state = queries.mapState.get();
+      return sendPng(response, mapImagePath, state.image_version);
+    }
+    const heroTokenRoute = url.pathname.match(/^\/api\/heroes\/([^/]+)\/token$/);
+    if (request.method === "GET" && heroTokenRoute) {
+      const user = requireUser(request, response);
+      if (!user) return;
+      const heroId = decodeURIComponent(heroTokenRoute[1]);
+      const row = queries.heroForToken.get(heroId);
+      if (!row) return json(response, 404, { error: "Held nicht gefunden." });
+      if (row.user_id !== user.id && user.role !== "master" && row.active !== 1) return json(response, 403, { error: "Token ist nicht zugänglich." });
+      const hero = JSON.parse(row.data);
+      if (!hero.mapTokenVersion) return json(response, 404, { error: "Für diesen Helden wurde noch kein Token hochgeladen." });
+      return sendPng(response, tokenPathFor(heroId), hero.mapTokenVersion);
+    }
+    if (request.method === "PUT" && heroTokenRoute) {
+      const user = requireUser(request, response);
+      if (!user) return;
+      const heroId = decodeURIComponent(heroTokenRoute[1]);
+      const row = queries.heroById.get(user.id, heroId);
+      if (!row) return json(response, 404, { error: "Held nicht gefunden." });
+      if (!String(request.headers["content-type"] ?? "").toLowerCase().startsWith("image/png")) return json(response, 415, { error: "Das Heldentoken muss eine PNG-Datei sein." });
+      const image = await readBinary(request, 2 * 1024 * 1024);
+      if (!isPng(image)) return json(response, 400, { error: "Die Datei ist kein gültiges PNG." });
+      writeAtomic(tokenPathFor(heroId), image);
+      const hero = JSON.parse(row.data);
+      const updatedHero = { ...hero, mapTokenVersion: Date.now() };
+      queries.saveHero.run(JSON.stringify(updatedHero), updatedHero.sessionActive ? 1 : 0, new Date().toISOString(), user.id, heroId);
+      return json(response, 200, { hero: updatedHero });
+    }
+    if (request.method === "PUT" && url.pathname === "/api/master/map/image") {
+      if (!requireMaster(request, response)) return;
+      if (!String(request.headers["content-type"] ?? "").toLowerCase().startsWith("image/png")) return json(response, 415, { error: "Die Karte muss eine PNG-Datei sein." });
+      const image = await readBinary(request, 20 * 1024 * 1024);
+      if (!isPng(image)) return json(response, 400, { error: "Die Datei ist kein gültiges PNG." });
+      writeAtomic(mapImagePath, image);
+      const version = Date.now();
+      queries.saveMapImageVersion.run(version, new Date().toISOString());
+      return json(response, 200, { map: mapSnapshot() });
+    }
+    if (request.method === "PUT" && url.pathname === "/api/master/map/fog") {
+      if (!requireMaster(request, response)) return;
+      const input = await readBody(request);
+      if (!Array.isArray(input?.revealed) || input.revealed.length > 500) return json(response, 400, { error: "Die Nebelmaske ist ungültig oder zu groß." });
+      const revealed = input.revealed.map(safeFogRect).filter(Boolean);
+      if (revealed.length !== input.revealed.length) return json(response, 400, { error: "Mindestens ein aufgedeckter Bereich ist ungültig." });
+      queries.saveMapFog.run(JSON.stringify(revealed), new Date().toISOString());
+      return json(response, 200, { map: mapSnapshot() });
+    }
+    const masterMapTokenRoute = url.pathname.match(/^\/api\/master\/map\/tokens\/([^/]+)$/);
+    if (request.method === "PUT" && masterMapTokenRoute) {
+      if (!requireMaster(request, response)) return;
+      const heroId = decodeURIComponent(masterMapTokenRoute[1]);
+      if (!queries.heroForToken.get(heroId)) return json(response, 404, { error: "Held nicht gefunden." });
+      const input = await readBody(request);
+      const x = Math.max(0, Math.min(1, Number(input?.x)));
+      const y = Math.max(0, Math.min(1, Number(input?.y)));
+      if (!Number.isFinite(x) || !Number.isFinite(y)) return json(response, 400, { error: "Ungültige Tokenposition." });
+      queries.saveMapTokenPosition.run(heroId, x, y, new Date().toISOString());
+      return json(response, 200, { map: mapSnapshot() });
+    }
     if (request.method === "GET" && url.pathname === "/api/master/heroes") {
       if (!requireMaster(request, response)) return;
       const heroes = queries.activeHeroesForMaster.all().map((row) => ({ hero: JSON.parse(row.data), username: row.username, updatedAt: row.updated_at }));
@@ -332,6 +509,9 @@ const server = createServer(async (request, response) => {
       const heroId = decodeURIComponent(heroRoute[1]);
       const result = queries.deleteHero.run(user.id, heroId);
       if (result.changes === 0) return json(response, 404, { error: "Held nicht gefunden." });
+      queries.deleteMapTokenPosition.run(heroId);
+      const tokenPath = tokenPathFor(heroId);
+      if (existsSync(tokenPath)) unlinkSync(tokenPath);
       return json(response, 200, { ok: true });
     }
     return json(response, 404, { error: "Nicht gefunden." });

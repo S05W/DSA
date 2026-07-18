@@ -19,5 +19,5 @@
 .hero-card-stats strong { font-family: Georgia, serif; font-size: 1.2rem; }
 .hero-card-link { display: flex; justify-content: space-between; align-items: center; color: var(--forest); text-decoration: none; font-weight: 800; }
 .hero-card-link:hover { color: var(--ruby); }
-.hero-card-delete { width: 100%; margin-top: 16px; padding: 9px; border: 1px solid #d8b7b2; border-radius: 8px; color: var(--ruby); background: transparent; font-size: .82rem; font-weight: 700; }
-.hero-card-delete:hover { color: white; background: var(--ruby); }
+.hero-card-delete { width: 28px; height: 28px; position: absolute; top: 12px; left: 12px; z-index: 3; display: grid; place-items: center; border: 1px solid rgba(255,255,255,.5); border-radius: 50%; color: white; background: rgba(31,20,17,.32); font-size: 1.15rem; font-weight: 700; line-height: 1; opacity: .72; }
+.hero-card-delete:hover { border-color: white; background: var(--ruby); opacity: 1; }
