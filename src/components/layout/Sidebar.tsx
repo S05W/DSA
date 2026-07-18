@@ -25,6 +25,9 @@ function Sidebar({ heroName }: SidebarProps) {
           <NavLink to="/" end className={({ isActive }) => `sidebar-link${isActive ? " active" : ""}`}>
             <span className="sidebar-icon">◆</span>Meine Helden
           </NavLink>
+          <NavLink to="/wuerfel" className={({ isActive }) => `sidebar-link${isActive ? " active" : ""}`}>
+            <span className="sidebar-icon">W</span>Würfel
+          </NavLink>
           {heroName && <div className="sidebar-context"><span>Geöffneter Held</span><strong>{heroName}</strong></div>}
         </nav>
       </div>

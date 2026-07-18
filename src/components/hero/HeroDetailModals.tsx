@@ -1,7 +1,8 @@
 import Button from "react-bootstrap/Button";
 import Form from "react-bootstrap/Form";
 import Modal from "react-bootstrap/Modal";
-import type { EquipmentItem, SpellValue } from "../../models/Hero";
+import { equipmentSlots } from "../../data/body";
+import type { EquipmentItem, EquipmentSlotId, SpellValue } from "../../models/Hero";
 
 interface SpellDetailModalProps {
   spell: SpellValue | null;
@@ -41,6 +42,11 @@ interface EquipmentDetailModalProps {
 }
 
 export function EquipmentDetailModal({ item, setup, equippedAt, onHide, onChange, onDelete }: EquipmentDetailModalProps) {
+  function toggleSlot(slotId: EquipmentSlotId) {
+    if (!item) return;
+    const current = item.allowedSlots ?? [];
+    onChange({ allowedSlots: current.includes(slotId) ? current.filter((id) => id !== slotId) : [...current, slotId] });
+  }
   return (
     <Modal show={Boolean(item)} onHide={onHide} centered size="lg">
       <Modal.Header closeButton><div><span className="detail-kicker">Gegenstandsdetails</span><Modal.Title>{item?.name || "Ausrüstung"}</Modal.Title></div></Modal.Header>
@@ -55,6 +61,10 @@ export function EquipmentDetailModal({ item, setup, equippedAt, onHide, onChange
           <DetailField label="Wert" value={item.value ?? ""} setup={setup} onChange={(value) => onChange({ value })} placeholder="z. B. 15 Silbertaler" />
           <DetailField label="Beschreibung" value={item.description ?? ""} setup={setup} onChange={(value) => onChange({ description: value })} wide multiline />
           <DetailField label="Notizen" value={item.notes} setup={setup} onChange={(value) => onChange({ notes: value })} wide multiline />
+          <div className="detail-wide body-visibility-setting">
+            <Form.Check type="switch" id={`body-visible-${item.id}`} label="Im Körperbereich anzeigen und ausrüsten" checked={Boolean(item.showOnBody)} disabled={!setup} onChange={(event) => onChange({ showOnBody: event.target.checked })} />
+            {item.showOnBody && <div className="allowed-slots"><span>Erlaubte Ausrüstungsplätze</span><div>{equipmentSlots.map((slot) => <button type="button" key={slot.id} disabled={!setup} className={(item.allowedSlots ?? []).includes(slot.id) ? "selected" : ""} onClick={() => toggleSlot(slot.id)}>{slot.label}</button>)}</div></div>}
+          </div>
         </div>
       </Modal.Body>}
       <Modal.Footer>{setup && <Button variant="outline-danger" onClick={onDelete}>Gegenstand entfernen</Button>}<Button variant="secondary" onClick={onHide}>Schließen</Button></Modal.Footer>

@@ -10,7 +10,7 @@ import Sidebar from "../components/layout/Sidebar";
 import { useApp } from "../context/app-context";
 import { equipmentSlots } from "../data/body";
 import { talentCategories } from "../data/talents";
-import type { EquipmentItem, Hero, SpellValue, TalentCategory } from "../models/Hero";
+import type { EquipmentItem, EquipmentSlotId, Hero, SpellValue, TalentCategory } from "../models/Hero";
 import { createId } from "../utils/id";
 
 type HeroTab = "overview" | "attributes" | "talents" | "spells" | "equipment" | "body";
@@ -46,7 +46,16 @@ function HeroPage() {
   const equippedSlot = equipmentSlots.find((slot) => hero.body.equipped[slot.id] === equipmentDetailId)?.label;
 
   function patchEquipment(itemId: string, patch: Partial<EquipmentItem>) {
-    patchHero((current) => ({ ...current, equipment: current.equipment.map((item) => item.id === itemId ? { ...item, ...patch } : item) }));
+    patchHero((current) => {
+      const equipment = current.equipment.map((item) => item.id === itemId ? { ...item, ...patch } : item);
+      const equipped = Object.fromEntries(Object.entries(current.body.equipped).filter(([slotId, equippedId]) => {
+        if (equippedId !== itemId) return true;
+        if (patch.showOnBody === false) return false;
+        if (patch.allowedSlots && !patch.allowedSlots.includes(slotId as EquipmentSlotId)) return false;
+        return true;
+      }));
+      return { ...current, equipment, body: { ...current.body, equipped } };
+    });
   }
 
   function removeEquipment(itemId: string) {
@@ -140,7 +149,7 @@ function HeroPage() {
         {activeTab === "attributes" && <AttributePanel hero={hero} updateHero={patchHero} setup={setup} />}
         {activeTab === "talents" && <TalentPanel hero={hero} updateHero={patchHero} setup={setup} />}
         {activeTab === "spells" && <SpellPanel hero={hero} updateHero={patchHero} setup={setup} />}
-        {activeTab === "equipment" && <EquipmentPanel hero={hero} updateHero={patchHero} setup={setup} onInspectItem={setEquipmentDetailId} />}
+        {activeTab === "equipment" && <EquipmentPanel hero={hero} updateHero={patchHero} setup={setup} onInspectItem={setEquipmentDetailId} onPatchItem={patchEquipment} />}
         {activeTab === "body" && <BodyPanel hero={hero} updateHero={patchHero} setup={setup} onInspectItem={setEquipmentDetailId} />}
 
         <EquipmentDetailModal item={detailItem} setup={setup} equippedAt={equippedSlot} onHide={() => setEquipmentDetailId(null)} onChange={(patch) => { if (equipmentDetailId) patchEquipment(equipmentDetailId, patch); }} onDelete={() => { if (equipmentDetailId) removeEquipment(equipmentDetailId); }} />
@@ -237,17 +246,18 @@ function AttributePanel({ hero, updateHero, setup }: { hero: Hero; updateHero: H
 
 function TalentPanel({ hero, updateHero, setup }: { hero: Hero; updateHero: HeroUpdater; setup: boolean }) {
   const grouped = useMemo(() => talentCategories.map((category) => ({ category, talents: hero.talents.filter((talent) => talent.category === category) })), [hero.talents]);
-  function setTalent(category: TalentCategory, name: string, value: number) {
-    updateHero((current) => ({ ...current, talents: current.talents.map((talent) => talent.category === category && talent.name === name ? { ...talent, value: Math.max(0, Math.min(30, value)) } : talent) }));
+  function patchTalent(category: TalentCategory, name: string, patch: Partial<(typeof hero.talents)[number]>) {
+    updateHero((current) => ({ ...current, talents: current.talents.map((talent) => talent.category === category && talent.name === name ? { ...talent, ...patch } : talent) }));
   }
   return (
     <section className="dsa-panel tab-panel">
       <div className="panel-heading"><span>Talente</span><small>{setup ? "Werte bearbeiten" : "Alle Talentgruppen"}</small></div>
+      <AttributeReference hero={hero} />
       <p className="panel-intro">{setup ? "Talentwerte können jetzt geändert werden." : "Zum Ändern der Talentwerte in den Setup-Modus wechseln."}</p>
       <div className="talent-category-grid">
         {grouped.map(({ category, talents }) => (
           <section className="talent-category" key={category}><h2>{category}</h2><div className="talent-rows">
-            {talents.map((talent) => <label key={talent.name} className="talent-row"><span>{talent.name}</span><input type="number" min={0} max={30} disabled={!setup} value={talent.value} onChange={(event) => setTalent(category, talent.name, Number(event.target.value))} /></label>)}
+            {talents.map((talent) => <div key={talent.name} className="talent-row"><span className="talent-name">{talent.name}</span>{setup ? <input className="talent-check-input" value={talent.check} onChange={(event) => patchTalent(category, talent.name, { check: event.target.value })} aria-label={`Probe für ${talent.name}`} /> : <small className="talent-check">{talent.check}</small>}<input className="talent-value-input" type="number" min={0} max={30} disabled={!setup} value={talent.value} onChange={(event) => patchTalent(category, talent.name, { value: Math.max(0, Math.min(30, Number(event.target.value))) })} aria-label={`Talentwert für ${talent.name}`} /></div>)}
           </div></section>
         ))}
       </div>
@@ -275,6 +285,7 @@ function SpellPanel({ hero, updateHero, setup }: { hero: Hero; updateHero: HeroU
   return (
     <section className="dsa-panel tab-panel">
       <div className="panel-heading"><span>Zauber</span><small>{setup ? "Bearbeiten und ergänzen" : "Magisches Repertoire"}</small></div>
+      <AttributeReference hero={hero} />
       {setup && (
         <Form className="spell-form" onSubmit={addSpell}>
           <Form.Group><Form.Label>Name</Form.Label><Form.Control required value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} placeholder="z. B. Ignifaxius" /></Form.Group>
@@ -300,12 +311,16 @@ function SpellPanel({ hero, updateHero, setup }: { hero: Hero; updateHero: HeroU
   );
 }
 
-function EquipmentPanel({ hero, updateHero, setup, onInspectItem }: { hero: Hero; updateHero: HeroUpdater; setup: boolean; onInspectItem: (itemId: string) => void }) {
+function AttributeReference({ hero }: { hero: Hero }) {
+  return <section className="attribute-reference" aria-label="Eigenschaftswerte für Proben"><div className="attribute-reference-heading"><strong>Eigenschaften für die Probe</strong><span>Die drei genannten Werte werden jeweils mit 1W20 geprüft.</span></div><div>{hero.attributes.map((attribute) => <article key={attribute.short}><span>{attribute.short}</span><strong>{attribute.value}</strong><small>{attribute.name}</small></article>)}</div></section>;
+}
+
+function EquipmentPanel({ hero, updateHero, setup, onInspectItem, onPatchItem }: { hero: Hero; updateHero: HeroUpdater; setup: boolean; onInspectItem: (itemId: string) => void; onPatchItem: (itemId: string, patch: Partial<EquipmentItem>) => void }) {
   const [draft, setDraft] = useState({ name: "", quantity: 1, notes: "" });
   function addItem(event: FormEvent) {
     event.preventDefault();
     if (!draft.name.trim()) return;
-    const item: EquipmentItem = { id: createId(), name: draft.name.trim(), quantity: Math.max(1, draft.quantity), notes: draft.notes.trim() };
+    const item: EquipmentItem = { id: createId(), name: draft.name.trim(), quantity: Math.max(1, draft.quantity), notes: draft.notes.trim(), showOnBody: false, allowedSlots: [] };
     updateHero((current) => ({ ...current, equipment: [...current.equipment, item] }));
     setDraft({ name: "", quantity: 1, notes: "" });
   }
@@ -321,7 +336,7 @@ function EquipmentPanel({ hero, updateHero, setup, onInspectItem }: { hero: Hero
         </Form>
       )}
       {hero.equipment.length ? (
-        <div className="equipment-detail-grid">{hero.equipment.map((item) => <button type="button" key={item.id} className="equipment-detail-card" onClick={() => onInspectItem(item.id)}><span>{item.quantity}×</span><div><strong>{item.name}</strong><small>{item.category || item.notes || "Keine weiteren Angaben"}</small></div><b>Details →</b></button>)}</div>
+        <div className="equipment-detail-grid">{hero.equipment.map((item) => <article key={item.id} className="equipment-config-card"><button type="button" className="equipment-detail-card" onClick={() => onInspectItem(item.id)}><span>{item.quantity}×</span><div><strong>{item.name}</strong><small>{item.category || item.notes || "Keine weiteren Angaben"}</small></div><b>Details →</b></button>{setup && <div className="inline-body-config"><Form.Check type="checkbox" id={`inline-body-${item.id}`} label="Im Körperbereich anzeigen" checked={Boolean(item.showOnBody)} onChange={(event) => onPatchItem(item.id, { showOnBody: event.target.checked })} />{item.showOnBody && <div className="inline-slot-picker"><span>Wo kann es ausgerüstet werden?</span><div>{equipmentSlots.map((slot) => { const selected = item.allowedSlots?.includes(slot.id) ?? false; return <button type="button" key={slot.id} className={selected ? "selected" : ""} onClick={() => onPatchItem(item.id, { allowedSlots: selected ? item.allowedSlots?.filter((id) => id !== slot.id) : [...(item.allowedSlots ?? []), slot.id] })}>{slot.label}</button>; })}</div></div>}</div>}</article>)}</div>
       ) : <p className="empty-state">Das Inventar ist noch leer.</p>}
     </section>
   );

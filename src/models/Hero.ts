@@ -15,6 +15,7 @@ export interface TalentValue {
   name: string;
   category: TalentCategory;
   value: number;
+  check: string;
 }
 
 export interface SpellValue {
@@ -39,10 +40,12 @@ export interface EquipmentItem {
   weight?: string;
   armor?: number;
   value?: string;
+  showOnBody?: boolean;
+  allowedSlots?: EquipmentSlotId[];
 }
 
-export type BodyPartId = "head" | "torso" | "leftArm" | "rightArm" | "leftLeg" | "rightLeg";
-export type EquipmentSlotId = "head" | "neck" | "torso" | "back" | "mainHand" | "offHand" | "belt" | "legs" | "feet";
+export type BodyPartId = "head" | "torso" | "leftArm" | "rightArm" | "leftLeg" | "rightLeg" | "leftFoot" | "rightFoot";
+export type EquipmentSlotId = "head" | "neck" | "torso" | "back" | "rightHand" | "leftHand" | "belt" | "legs" | "feet";
 
 export interface BodyPartState {
   id: BodyPartId;
@@ -57,12 +60,24 @@ export interface StatusEffect {
   name: string;
   level: number;
   notes: string;
+  cause: string;
+  duration: string;
+  source: "player" | "master";
+}
+
+export interface BodyHistoryEntry {
+  id: string;
+  timestamp: string;
+  actor: "player" | "master" | "system";
+  message: string;
 }
 
 export interface BodyState {
+  equipmentVisibilityVersion: number;
   parts: BodyPartState[];
   statuses: StatusEffect[];
   equipped: Partial<Record<EquipmentSlotId, string>>;
+  history: BodyHistoryEntry[];
 }
 
 export interface Hero {
