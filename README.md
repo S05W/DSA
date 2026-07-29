@@ -20,7 +20,9 @@ Der Kampf-Tab verwaltet AT, PA, Ausweichen, Initiative, Geschwindigkeit und Rüs
 
 Spieler können einen Helden im Heldenbogen als „In der Sitzung“ markieren. Meister sehen unter `/meister` alle aktiven Helden mit Spielername, LeP, AsP und Anzahl der Statuseffekte. Ein Klick öffnet den vollständigen Heldenbogen schreibgeschützt. Nur im Körperbereich darf der Meister eigene Statuseffekte setzen oder wieder entfernen. Diese erscheinen beim Spieler mit einer roten Meistermarkierung und werden innerhalb weniger Sekunden synchronisiert.
 
-Neue Benutzer sind immer normale Spieler. Die Meisterrolle wird ausschließlich lokal auf dem Server vergeben:
+Auf der Anmeldeseite kann zwischen Spieler- und Meisteransicht gewählt werden. Ein freigeschaltetes Meisterkonto kann außerdem über die Seitenleiste jederzeit zwischen beiden Ansichten wechseln. Die Auswahl ändert nur die Ansicht; normale Spielerkonten können sich dadurch keine Meisterrechte geben.
+
+Neue Benutzer sind immer normale Spieler. Die eigentliche Meisterberechtigung wird ausschließlich lokal auf dem Server vergeben:
 
 ```bash
 cd ~/apps/DSA
@@ -35,6 +37,16 @@ npm run set-role -- Simon player
 
 Nach einer Rollenänderung muss sich der Benutzer einmal ab- und wieder anmelden.
 
+Unter `/meister/server` zeigt der Pi-Status CPU-Auslastung und Load, Arbeitsspeicher, Datenträger, Temperatur, Laufzeiten sowie die Größe von Prozess und Datenbank. Die Werte werden alle fünf Sekunden aktualisiert und serverseitig zwischengespeichert, damit die Statusseite selbst nur sehr wenig Last erzeugt.
+
+## Handouts
+
+Unter `/meister/handouts` bereitet der Meister Briefe, Hinweise, Porträts, Dokumente und andere Illustrationen als PNG, JPG, JPEG oder SVG vor. Jedes Handout kann für alle Spieler oder nur für ein bestimmtes Spielerkonto bestimmt, zunächst als Entwurf gespeichert, hervorgehoben und während der Sitzung gezielt freigegeben oder wieder zurückgezogen werden.
+
+Spieler finden freigegebene Inhalte unter `/handouts`. Die Ansicht aktualisiert sich automatisch, bietet Filter nach Materialart und öffnet Bilder in einer bildschirmfüllenden Präsentationsansicht. Frisch enthüllte Inhalte werden 15 Minuten lang als neu markiert; ein Download des Originalbildes ist ebenfalls möglich.
+
+Handout-Dateien dürfen höchstens 12 MB groß sein. SVG-Dateien werden vor dem Speichern auf aktive oder externe Inhalte geprüft und bei der Auslieferung zusätzlich durch eine restriktive Content-Security-Policy abgeschirmt.
+
 ## Karten- und Fernseheransicht
 
 Unter `/meister/karte` verwaltet der Meister mehrere benannte Karten und bestimmt, welche davon gerade für Spieler und Fernseher aktiv ist. Eine bereits vorhandene Einzelkarte wird beim ersten Start automatisch samt Nebel und Tokenpositionen als „Karte 1“ übernommen. Kartenbilder dürfen PNG, JPG oder WebP und höchstens 20 MB groß sein.
@@ -44,6 +56,8 @@ Der Nebel lässt sich mit runden Pinseln oder Rechtecken aufdecken und wieder ve
 Öffentliche oder geheime Pins markieren Shops, Tavernen, Orte, NPCs, Quests, Schätze, Übergänge und Fallen. Der Meister kann außerdem sichtbare oder geheime Monster mit eigenen LeP, AsP, Notizen und Tokenbildern einsetzen und bewegen. Aktive Helden und Monster zeigen je nach Karteneinstellung genaue LeP-/AsP-Werte, nur Balken oder keine Ressourcen. Geheime Pins und Monster bleiben in der Spieleransicht verborgen.
 
 Jeder Spieler kann im Heldenbogen ein eigenes PNG-, JPG- oder WebP-Token bis 2 MB hochladen. Die bildschirmfüllende Route `/karte/anzeige` ist für einen Fernseher gedacht, aktualisiert sich automatisch und zeigt unbekannte Bereiche schwarz. Die Anzeige setzt aus Sicherheitsgründen eine angemeldete Sitzung voraus.
+
+Die Fernseheransicht fragt zunächst nur die Kartenrevision ab und lädt den vollständigen Zustand erst nach einer Änderung. Kartenbilder werden gestreamt und langfristig im Browser zwischengespeichert. Pinselzüge werden als kompakte SVG-Pfade gerendert, damit auch große Nebelmasken auf schwächeren Geräten flüssig bleiben.
 
 ## Voraussetzungen
 
@@ -133,5 +147,5 @@ Die Dateien `.env`, `data/` und `*.db` werden bewusst nicht versioniert.
 - Passwörter werden mit `scrypt` und individuellem Salt gespeichert.
 - Sitzungen verwenden zufällige Token in `HttpOnly`- und `SameSite=Strict`-Cookies.
 - Die API lauscht nur auf `127.0.0.1`; Zugriffe laufen über Nginx.
-- Karten dürfen höchstens 20 MB sowie Helden- und Monstertokens höchstens 2 MB groß sein. Der Server prüft Dateityp und die Signatur von PNG-, JPG- und WebP-Dateien.
+- Karten dürfen höchstens 20 MB, Handouts höchstens 12 MB sowie Helden- und Monstertokens höchstens 2 MB groß sein. Der Server prüft Dateityp und Dateisignatur; SVG-Handouts werden zusätzlich auf gefährliche Inhalte geprüft.
 - Für einen späteren Internetzugriff muss HTTPS eingerichtet und `COOKIE_SECURE=true` gesetzt werden.

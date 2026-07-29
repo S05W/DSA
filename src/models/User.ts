@@ -1,6 +1,7 @@
 import type { Hero } from "./Hero";
 
 export type UserRole = "player" | "master";
+export type ViewRole = UserRole;
 
 export interface SessionUser {
   id: string;

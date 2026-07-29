@@ -1,0 +1,161 @@
+import type {
+  BodyPartId,
+  BodyState,
+  EquipmentItem,
+  EquipmentSlotId,
+  Hero,
+  NamedFeature,
+} from "../models/Hero";
+import { createId } from "../utils/id";
+import { talentCheckFor } from "./talents";
+
+export const bodyPartDefinitions: { id: BodyPartId; label: string; maxDamage: number }[] = [
+  { id: "head", label: "Kopf", maxDamage: 4 },
+  { id: "torso", label: "Oberkörper", maxDamage: 6 },
+  { id: "leftArm", label: "Linker Arm", maxDamage: 4 },
+  { id: "rightArm", label: "Rechter Arm", maxDamage: 4 },
+  { id: "leftLeg", label: "Linkes Bein", maxDamage: 5 },
+  { id: "rightLeg", label: "Rechtes Bein", maxDamage: 5 },
+  { id: "leftFoot", label: "Linker Fuß", maxDamage: 3 },
+  { id: "rightFoot", label: "Rechter Fuß", maxDamage: 3 },
+];
+
+export const equipmentSlots: { id: EquipmentSlotId; label: string }[] = [
+  { id: "head", label: "Kopf" },
+  { id: "neck", label: "Hals" },
+  { id: "torso", label: "Oberkörper" },
+  { id: "back", label: "Rücken" },
+  { id: "rightHand", label: "Rechte Hand" },
+  { id: "leftHand", label: "Linke Hand" },
+  { id: "belt", label: "Gürtel" },
+  { id: "legs", label: "Beine" },
+  { id: "feet", label: "Füße" },
+];
+
+export const commonStatuses = [
+  "Betäubung",
+  "Belastung",
+  "Entrückung",
+  "Furcht",
+  "Paralyse",
+  "Schmerz",
+  "Verwirrung",
+  "Vergiftet",
+  "Brennend",
+  "Liegend",
+];
+
+export function createDefaultBody(): BodyState {
+  return {
+    equipmentVisibilityVersion: 1,
+    parts: bodyPartDefinitions.map((part) => ({
+      id: part.id,
+      label: part.label,
+      damage: 0,
+      maxDamage: part.maxDamage,
+      notes: "",
+    })),
+    statuses: [],
+    equipped: {},
+    history: [],
+  };
+}
+
+function finiteNumber(value: unknown, fallback = 0) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : fallback;
+}
+
+function normalizeNamedFeature(entry: NamedFeature): NamedFeature {
+  return {
+    id: typeof entry.id === "string" && entry.id ? entry.id : createId(),
+    name: typeof entry.name === "string" ? entry.name : "",
+    description: typeof entry.description === "string" ? entry.description : "",
+  };
+}
+
+function normalizeEquipment(item: EquipmentItem): EquipmentItem {
+  const allowedSlots = Array.isArray(item.allowedSlots)
+    ? item.allowedSlots.filter((slot): slot is EquipmentSlotId => equipmentSlots.some((definition) => definition.id === slot))
+    : [];
+  return {
+    ...item,
+    id: typeof item.id === "string" && item.id ? item.id : createId(),
+    name: typeof item.name === "string" ? item.name : "Unbenannter Gegenstand",
+    quantity: Math.max(0, Math.round(finiteNumber(item.quantity, 1))),
+    notes: typeof item.notes === "string" ? item.notes : "",
+    showOnBody: Boolean(item.showOnBody),
+    allowedSlots,
+  };
+}
+
+export function normalizeHero(hero: Hero): Hero {
+  const equipment = (Array.isArray(hero.equipment) ? hero.equipment : []).map(normalizeEquipment);
+  const existingParts = Array.isArray(hero.body?.parts) ? hero.body.parts : [];
+  const equipped: BodyState["equipped"] = {};
+
+  for (const slot of equipmentSlots) {
+    const itemId = hero.body?.equipped?.[slot.id];
+    if (typeof itemId === "string" && equipment.some((item) => item.id === itemId)) equipped[slot.id] = itemId;
+  }
+
+  const body: BodyState = {
+    equipmentVisibilityVersion: Math.max(1, Math.round(finiteNumber(hero.body?.equipmentVisibilityVersion, 1))),
+    parts: bodyPartDefinitions.map((definition) => {
+      const current = existingParts.find((part) => part.id === definition.id);
+      return {
+        id: definition.id,
+        label: definition.label,
+        damage: Math.max(0, Math.round(finiteNumber(current?.damage))),
+        maxDamage: Math.max(1, Math.round(finiteNumber(current?.maxDamage, definition.maxDamage))),
+        notes: typeof current?.notes === "string" ? current.notes : "",
+      };
+    }),
+    statuses: (Array.isArray(hero.body?.statuses) ? hero.body.statuses : []).map((status) => ({
+      id: typeof status.id === "string" && status.id ? status.id : createId(),
+      name: typeof status.name === "string" ? status.name : "Unbekannter Status",
+      level: Math.max(1, Math.round(finiteNumber(status.level, 1))),
+      notes: typeof status.notes === "string" ? status.notes : "",
+      cause: typeof status.cause === "string" ? status.cause : "",
+      duration: typeof status.duration === "string" ? status.duration : "",
+      source: status.source === "master" ? "master" : "player",
+    })),
+    equipped,
+    history: (Array.isArray(hero.body?.history) ? hero.body.history : []).map((entry) => ({
+      id: typeof entry.id === "string" && entry.id ? entry.id : createId(),
+      timestamp: typeof entry.timestamp === "string" ? entry.timestamp : new Date().toISOString(),
+      actor: (entry.actor === "master" || entry.actor === "system" ? entry.actor : "player") as BodyState["history"][number]["actor"],
+      message: typeof entry.message === "string" ? entry.message : "",
+    })).slice(-100),
+  };
+
+  return {
+    ...hero,
+    sessionActive: Boolean(hero.sessionActive),
+    talents: (Array.isArray(hero.talents) ? hero.talents : []).map((talent) => ({
+      ...talent,
+      check: typeof talent.check === "string" && talent.check ? talent.check : talentCheckFor(talent.name),
+    })),
+    spells: Array.isArray(hero.spells) ? hero.spells : [],
+    combat: {
+      attack: finiteNumber(hero.combat?.attack),
+      parry: finiteNumber(hero.combat?.parry),
+      dodge: finiteNumber(hero.combat?.dodge),
+      initiative: finiteNumber(hero.combat?.initiative),
+      speed: finiteNumber(hero.combat?.speed, 8),
+      armor: finiteNumber(hero.combat?.armor),
+      techniques: Array.isArray(hero.combat?.techniques) ? hero.combat.techniques : [],
+    },
+    languages: Array.isArray(hero.languages) ? hero.languages : [],
+    money: {
+      ducats: finiteNumber(hero.money?.ducats),
+      silver: finiteNumber(hero.money?.silver),
+      heller: finiteNumber(hero.money?.heller),
+    },
+    magicalSpecialAbilities: (Array.isArray(hero.magicalSpecialAbilities) ? hero.magicalSpecialAbilities : []).map(normalizeNamedFeature),
+    cantrips: (Array.isArray(hero.cantrips) ? hero.cantrips : []).map(normalizeNamedFeature),
+    resistances: Array.isArray(hero.resistances) ? hero.resistances : [],
+    equipment,
+    body,
+  };
+}

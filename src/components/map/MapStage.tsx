@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useRef, useState, type DragEvent, type PointerEvent } from "react";
+import { memo, useCallback, useEffect, useId, useRef, useState, type DragEvent, type PointerEvent } from "react";
 import type { FogShape, GameMapSnapshot, MapImageMetrics, MapMonster, MapPin, MapToken } from "../../models/Map";
 
 interface MapStageProps {
@@ -26,11 +26,14 @@ function positionFromEvent(event: { currentTarget: HTMLDivElement; clientX: numb
   };
 }
 
-function FogShapeElement({ shape, preview = false }: { shape: FogShape; preview?: boolean }) {
+const FogShapeElement = memo(function FogShapeElement({ shape, preview = false }: { shape: FogShape; preview?: boolean }) {
   const fill = preview ? (shape.mode === "reveal" ? "rgba(64,190,112,.55)" : "rgba(205,63,58,.55)") : shape.mode === "reveal" ? "black" : "white";
   if (shape.shape === "rect") return <rect x={shape.x * 100} y={shape.y * 100} width={shape.width * 100} height={shape.height * 100} fill={fill} />;
-  return <g>{shape.points.map((point, index) => <ellipse key={`${shape.id}-${index}`} cx={point.x * 100} cy={point.y * 100} rx={shape.radiusX * 100} ry={shape.radiusY * 100} fill={fill} />)}</g>;
-}
+  if (shape.points.length === 1) return <ellipse cx={shape.points[0].x * 100} cy={shape.points[0].y * 100} rx={shape.radiusX * 100} ry={shape.radiusY * 100} fill={fill} />;
+  const scaleY = shape.radiusY / shape.radiusX;
+  const path = shape.points.map((point, index) => `${index ? "L" : "M"} ${point.x * 100} ${(point.y * 100) / scaleY}`).join(" ");
+  return <path d={path} transform={`scale(1 ${scaleY})`} fill="none" stroke={fill} strokeWidth={shape.radiusX * 200} strokeLinecap="round" strokeLinejoin="round" />;
+});
 
 function ResourceBars({ life, maxLife, astral, maxAstral, mode }: { life: number; maxLife: number; astral: number; maxAstral: number; mode: "numbers" | "bars" }) {
   const lifeWidth = Math.max(0, Math.min(100, maxLife ? (life / maxLife) * 100 : 0));
@@ -41,7 +44,7 @@ function ResourceBars({ life, maxLife, astral, maxAstral, mode }: { life: number
   </div>;
 }
 
-function EntityToken({ entity, movable, resourceMode, onMonsterSelect }: { entity: MapToken | MapMonster; movable: boolean; resourceMode: "numbers" | "bars" | "hidden"; onMonsterSelect?: (monster: MapMonster) => void }) {
+const EntityToken = memo(function EntityToken({ entity, movable, resourceMode, onMonsterSelect }: { entity: MapToken | MapMonster; movable: boolean; resourceMode: "numbers" | "bars" | "hidden"; onMonsterSelect?: (monster: MapMonster) => void }) {
   const monster = entity.kind === "monster";
   const id = monster ? entity.id : entity.heroId;
   const name = monster ? entity.name : entity.heroName;
@@ -51,7 +54,7 @@ function EntityToken({ entity, movable, resourceMode, onMonsterSelect }: { entit
     <strong>{name}</strong>
     {resourceMode !== "hidden" && <ResourceBars life={entity.lifePoints} maxLife={entity.maxLifePoints} astral={entity.astralPoints} maxAstral={entity.maxAstralPoints} mode={resourceMode} />}
   </div>;
-}
+});
 
 export default function MapStage({ snapshot, fogMode, zoom = 1, preview, onPointerDown, onPointerMove, onPointerUp, onEntityDrop, onMapPoint, onPinSelect, onMonsterSelect, onMetrics }: MapStageProps) {
   const rawId = useId();

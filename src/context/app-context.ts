@@ -1,12 +1,14 @@
 import { createContext, useContext } from "react";
 import type { Hero } from "../models/Hero";
-import type { SessionUser } from "../models/User";
+import type { SessionUser, ViewRole } from "../models/User";
 
 export interface AppContextValue {
   user: SessionUser | null;
+  viewRole: ViewRole;
   heroes: Hero[];
-  login: (username: string, password: string) => Promise<void>;
+  login: (username: string, password: string, viewRole: ViewRole) => Promise<void>;
   register: (username: string, password: string) => Promise<void>;
+  setViewRole: (role: ViewRole) => void;
   logout: () => Promise<void>;
   createHero: (hero: Hero) => Promise<Hero>;
   deleteHero: (heroId: string) => Promise<void>;

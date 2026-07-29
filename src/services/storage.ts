@@ -1,6 +1,8 @@
 import type { Hero } from "../models/Hero";
-import type { MasterHeroRecord, SessionUser } from "../models/User";
+import type { MasterHeroRecord, SessionUser, ViewRole } from "../models/User";
 import type { FogShape, GameMapSnapshot, GameMapSummary, MapMonster, MapPin, ResourceDisplay } from "../models/Map";
+import type { ServerStatus } from "../models/ServerStatus";
+import type { Handout, HandoutInput, HandoutRecipient } from "../models/Handout";
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const response = await fetch(`/api${path}`, {
@@ -35,10 +37,10 @@ export const storage = {
     return result.user;
   },
 
-  async login(username: string, password: string): Promise<SessionUser> {
+  async login(username: string, password: string, viewRole: ViewRole): Promise<SessionUser> {
     const result = await request<{ user: SessionUser }>("/login", {
       method: "POST",
-      body: JSON.stringify({ username, password }),
+      body: JSON.stringify({ username, password, viewRole }),
     });
     return result.user;
   },
@@ -95,6 +97,58 @@ export const storage = {
   async getGameMap(): Promise<GameMapSnapshot> {
     const result = await request<{ map: GameMapSnapshot }>("/map");
     return result.map;
+  },
+
+  async pollGameMap(updatedAt: string): Promise<GameMapSnapshot | null> {
+    const response = await fetch(`/api/map?since=${encodeURIComponent(updatedAt)}`, { credentials: "same-origin" });
+    if (response.status === 304) return null;
+    const payload = await response.json().catch(() => ({})) as { error?: string; map?: GameMapSnapshot };
+    if (!response.ok || !payload.map) throw new Error(payload.error ?? "Die Karte konnte nicht aktualisiert werden.");
+    return payload.map;
+  },
+
+  async getServerStatus(): Promise<ServerStatus> {
+    const result = await request<{ status: ServerStatus }>("/master/server-status");
+    return result.status;
+  },
+
+  async getHandouts(): Promise<Handout[]> {
+    const result = await request<{ handouts: Handout[] }>("/handouts");
+    return result.handouts;
+  },
+
+  async getMasterHandouts(): Promise<{ handouts: Handout[]; recipients: HandoutRecipient[] }> {
+    return request<{ handouts: Handout[]; recipients: HandoutRecipient[] }>("/master/handouts");
+  },
+
+  async createHandout(input: HandoutInput): Promise<Handout> {
+    const result = await request<{ handout: Handout }>("/master/handouts", {
+      method: "POST",
+      body: JSON.stringify({ ...input, isPublished: false }),
+    });
+    return result.handout;
+  },
+
+  async updateHandout(handoutId: string, input: HandoutInput): Promise<Handout> {
+    const result = await request<{ handout: Handout }>(`/master/handouts/${encodeURIComponent(handoutId)}`, {
+      method: "PUT",
+      body: JSON.stringify(input),
+    });
+    return result.handout;
+  },
+
+  async uploadHandoutFile(handoutId: string, file: File): Promise<Handout> {
+    const type = file.type || (file.name.toLowerCase().endsWith(".svg") ? "image/svg+xml" : "application/octet-stream");
+    const result = await request<{ handout: Handout }>(`/master/handouts/${encodeURIComponent(handoutId)}/file`, {
+      method: "PUT",
+      headers: { "Content-Type": type, "X-File-Name": encodeURIComponent(file.name) },
+      body: file,
+    });
+    return result.handout;
+  },
+
+  async deleteHandout(handoutId: string): Promise<void> {
+    await request<{ ok: true }>(`/master/handouts/${encodeURIComponent(handoutId)}`, { method: "DELETE" });
   },
 
   async getMasterMaps(): Promise<GameMapSummary[]> {

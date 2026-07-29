@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import MapStage from "../components/map/MapStage";
 import type { GameMapSnapshot } from "../models/Map";
 import { storage } from "../services/storage";
@@ -6,8 +6,23 @@ import { storage } from "../services/storage";
 export default function MapDisplayPage() {
   const [snapshot, setSnapshot] = useState<GameMapSnapshot | null>(null);
   const [error, setError] = useState("");
+  const revision = useRef("");
+  const loading = useRef(false);
   const load = useCallback(async () => {
-    try { setSnapshot(await storage.getGameMap()); setError(""); } catch (reason) { setError(reason instanceof Error ? reason.message : "Karte konnte nicht geladen werden."); }
+    if (loading.current) return;
+    loading.current = true;
+    try {
+      const result = revision.current ? await storage.pollGameMap(revision.current) : await storage.getGameMap();
+      if (result) {
+        revision.current = result.updatedAt;
+        setSnapshot(result);
+      }
+      setError("");
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Karte konnte nicht geladen werden.");
+    } finally {
+      loading.current = false;
+    }
   }, []);
   useEffect(() => {
     const initial = window.setTimeout(() => { void load(); }, 0);

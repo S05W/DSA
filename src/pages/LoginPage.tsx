@@ -3,16 +3,18 @@ import Button from "react-bootstrap/Button";
 import Form from "react-bootstrap/Form";
 import { Navigate } from "react-router";
 import { useApp } from "../context/app-context";
+import type { ViewRole } from "../models/User";
 
 function LoginPage() {
-  const { user, login, register } = useApp();
+  const { user, viewRole, login, register } = useApp();
   const [mode, setMode] = useState<"login" | "register">("login");
+  const [requestedViewRole, setRequestedViewRole] = useState<ViewRole>("player");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  if (user) return <Navigate to="/" replace />;
+  if (user) return <Navigate to={viewRole === "master" ? "/meister" : "/"} replace />;
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
@@ -23,7 +25,7 @@ function LoginPage() {
     }
     try {
       setLoading(true);
-      if (mode === "login") await login(username, password);
+      if (mode === "login") await login(username, password, requestedViewRole);
       else await register(username, password);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Anmeldung fehlgeschlagen.");
@@ -52,6 +54,15 @@ function LoginPage() {
           </p>
 
           <Form onSubmit={submit}>
+            {mode === "login" && <fieldset className="login-role-choice">
+              <legend>Anmelden als</legend>
+              <button type="button" className={requestedViewRole === "player" ? "selected" : ""} onClick={() => setRequestedViewRole("player")}>
+                <strong>Spieler</strong><small>Eigene Helden verwalten</small>
+              </button>
+              <button type="button" className={requestedViewRole === "master" ? "selected" : ""} onClick={() => setRequestedViewRole("master")}>
+                <strong>Meister</strong><small>Sitzung, Karte und Server</small>
+              </button>
+            </fieldset>}
             <Form.Group className="mb-3" controlId="username">
               <Form.Label>Spielername</Form.Label>
               <Form.Control value={username} onChange={(event) => setUsername(event.target.value)} autoComplete="username" />
@@ -69,7 +80,7 @@ function LoginPage() {
           <button type="button" className="login-switch" onClick={() => { setMode(mode === "login" ? "register" : "login"); setError(""); }}>
             {mode === "login" ? "Noch kein Profil? Jetzt erstellen" : "Bereits ein Profil? Zur Anmeldung"}
           </button>
-          <small className="local-security-note">Deine Daten werden zentral auf dem DSA-Server gespeichert.</small>
+          <small className="local-security-note">{mode === "login" && requestedViewRole === "master" ? "Die Meisteransicht benötigt ein freigeschaltetes Meisterkonto." : "Deine Daten werden zentral auf dem DSA-Server gespeichert."}</small>
         </div>
       </section>
     </main>
