@@ -1,0 +1,6 @@
+.page-header { margin-bottom: 38px; display: flex; align-items: end; justify-content: space-between; gap: 28px; }
+.page-header h1 { margin: 3px 0 8px; font-family: Georgia, "Times New Roman", serif; font-size: clamp(2.2rem, 4vw, 3.7rem); line-height: 1; }
+.page-eyebrow { margin: 0; color: var(--ruby); font-size: .72rem; font-weight: 900; letter-spacing: .17em; text-transform: uppercase; }
+.hero-banner .page-eyebrow { color: #ead4a5; }
+.page-subtitle { max-width: 670px; margin: 0; color: var(--muted); font-size: 1.03rem; }
+@media (max-width: 680px) { .page-header { align-items: start; flex-direction: column; } }
