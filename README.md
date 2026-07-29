@@ -1,75 +1,143 @@
-# React + TypeScript + Vite
+# DSA-Heldenbogen
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React-Frontend mit zentraler Node.js-API und SQLite-Datenbank. Jeder Benutzer kann mehrere Helden anlegen, öffnen und bearbeiten. Anmeldung und Heldendaten werden auf dem Server gespeichert.
 
-Currently, two official plugins are available:
+Der Heldenbogen besitzt einen geschützten Spielmodus für laufende Ressourcen und einen Setup-Modus für Grunddaten, Eigenschaften, Talente, Zauber, Maximalwerte und Inventar. Helden können im Archiv nach einer Bestätigung wieder gelöscht werden.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Zauber und Gegenstände besitzen ausführliche Detailansichten. Die Körperansicht verwaltet zonenbezogene Verletzungen, globale Statuseffekte und per Drag-and-drop ausgerüstete Gegenstände. Bestehende Heldendaten werden beim Laden automatisch um diese Bereiche ergänzt.
 
-## React Compiler
+Gegenstände können gezielt für die Körperansicht freigegeben und auf kompatible Plätze beschränkt werden. Ausgerüstete Körperzonen werden an der Figur hervorgehoben. Körperänderungen werden protokolliert; vom späteren Meistersystem gesetzte Statuseffekte und Einträge besitzen bereits eine deutlich rote Warnmarkierung.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Die Körperfreigabe ist bei allen Gegenständen standardmäßig ausgeschaltet. Im Setup-Modus lässt sie sich direkt in der normalen Ausrüstungsliste aktivieren; anschließend werden die zulässigen Plätze ausgewählt. Beine und Füße besitzen getrennte Schadenszonen.
 
-## Expanding the ESLint configuration
+Talente zeigen ihre drei Eigenschaftsproben, während eine kompakte Eigenschaftsübersicht über Talenten und Zaubern den direkten Vergleich erleichtert. Die geschützte Würfelseite bietet W4, W6, W8, W10, W12, W20 und W100 sowie frei wählbare Würfelanzahl, Seitenzahl und Modifikator.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+Talent- und Zauberproben können direkt als 3W20-Probe ausgeführt werden. Die Auswertung zeigt jeden Einzelwurf, die verbrauchten Fertigkeitspunkte, Erfolg oder Misserfolg und die erreichte Qualitätsstufe. Erleichterungen und Erschwernisse lassen sich vor dem Wurf einstellen.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+Der Kampf-Tab verwaltet AT, PA, Ausweichen, Initiative, Geschwindigkeit und Rüstungsschutz. Kampftechniken sowie Sprachen und Schriften stehen zusätzlich unter den Talenten zur Verfügung. Die Übersicht enthält einen Geldbeutel für Dukaten, Silbertaler und Heller. Zaubertricks, magische Sonderfertigkeiten sowie ein eigener Bereich für Resistenzen und Immunitäten ergänzen den Heldenbogen.
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## Meisteransicht
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+Spieler können einen Helden im Heldenbogen als „In der Sitzung“ markieren. Meister sehen unter `/meister` alle aktiven Helden mit Spielername, LeP, AsP und Anzahl der Statuseffekte. Ein Klick öffnet den vollständigen Heldenbogen schreibgeschützt. Nur im Körperbereich darf der Meister eigene Statuseffekte setzen oder wieder entfernen. Diese erscheinen beim Spieler mit einer roten Meistermarkierung und werden innerhalb weniger Sekunden synchronisiert.
 
+Auf der Anmeldeseite kann zwischen Spieler- und Meisteransicht gewählt werden. Ein freigeschaltetes Meisterkonto kann außerdem über die Seitenleiste jederzeit zwischen beiden Ansichten wechseln. Die Auswahl ändert nur die Ansicht; normale Spielerkonten können sich dadurch keine Meisterrechte geben.
+
+Neue Benutzer sind immer normale Spieler. Die eigentliche Meisterberechtigung wird ausschließlich lokal auf dem Server vergeben:
+
+```bash
+cd ~/apps/DSA
+npm run set-role -- Simon master
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Zum Zurücksetzen auf einen Spieler:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```bash
+npm run set-role -- Simon player
 ```
+
+Nach einer Rollenänderung muss sich der Benutzer einmal ab- und wieder anmelden.
+
+Unter `/meister/server` zeigt der Pi-Status CPU-Auslastung und Load, Arbeitsspeicher, Datenträger, Temperatur, Laufzeiten sowie die Größe von Prozess und Datenbank. Die Werte werden alle fünf Sekunden aktualisiert und serverseitig zwischengespeichert, damit die Statusseite selbst nur sehr wenig Last erzeugt.
+
+## Karten- und Fernseheransicht
+
+Unter `/meister/karte` verwaltet der Meister mehrere benannte Karten und bestimmt, welche davon gerade für Spieler und Fernseher aktiv ist. Eine bereits vorhandene Einzelkarte wird beim ersten Start automatisch samt Nebel und Tokenpositionen als „Karte 1“ übernommen. Kartenbilder dürfen PNG, JPG oder WebP und höchstens 20 MB groß sein.
+
+Der Nebel lässt sich mit runden Pinseln oder Rechtecken aufdecken und wieder verbergen. Die Pinselgröße ist einstellbar; Rückgängig, Wiederholen, „Alles aufdecken“ und „Alles verbergen“ ergänzen die Werkzeugleiste. Der Zoom reicht von 10 bis 300 Prozent und die Schaltfläche „An Bildschirm anpassen“ zeigt auch große oder hochformatige Karten vollständig.
+
+Öffentliche oder geheime Pins markieren Shops, Tavernen, Orte, NPCs, Quests, Schätze, Übergänge und Fallen. Der Meister kann außerdem sichtbare oder geheime Monster mit eigenen LeP, AsP, Notizen und Tokenbildern einsetzen und bewegen. Aktive Helden und Monster zeigen je nach Karteneinstellung genaue LeP-/AsP-Werte, nur Balken oder keine Ressourcen. Geheime Pins und Monster bleiben in der Spieleransicht verborgen.
+
+Jeder Spieler kann im Heldenbogen ein eigenes PNG-, JPG- oder WebP-Token bis 2 MB hochladen. Die bildschirmfüllende Route `/karte/anzeige` ist für einen Fernseher gedacht, aktualisiert sich automatisch und zeigt unbekannte Bereiche schwarz. Die Anzeige setzt aus Sicherheitsgründen eine angemeldete Sitzung voraus.
+
+Die Fernseheransicht fragt zunächst nur die Kartenrevision ab und lädt den vollständigen Zustand erst nach einer Änderung. Kartenbilder werden gestreamt und langfristig im Browser zwischengespeichert. Pinselzüge werden als kompakte SVG-Pfade gerendert, damit auch große Nebelmasken auf schwächeren Geräten flüssig bleiben.
+
+## Voraussetzungen
+
+- Node.js 24
+- npm
+- Nginx für den Produktivbetrieb
+
+## Lokale Entwicklung
+
+In einem Terminal die API starten:
+
+```bash
+npm ci
+npm run server
+```
+
+In einem zweiten Terminal das Frontend starten:
+
+```bash
+npm run dev
+```
+
+Vite leitet `/api` während der Entwicklung an `127.0.0.1:3000` weiter. Die SQLite-Datei wird unter `data/dsa.db` erstellt und nicht in Git aufgenommen.
+
+## Installation auf dem Raspberry Pi
+
+```bash
+cd ~/apps/DSA
+npm ci
+npm run lint
+npm run build
+sudo mkdir -p /var/www/dsa
+sudo rsync -a --delete dist/ /var/www/dsa/
+```
+
+API als Dienst installieren:
+
+```bash
+sudo cp deploy/dsa-api.service /etc/systemd/system/dsa-api.service
+sudo systemctl daemon-reload
+sudo systemctl enable --now dsa-api
+sudo systemctl status dsa-api
+```
+
+Nginx-Konfiguration installieren:
+
+```bash
+sudo cp deploy/nginx-dsa.conf /etc/nginx/sites-available/dsa
+sudo ln -sfn /etc/nginx/sites-available/dsa /etc/nginx/sites-enabled/dsa
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+API testen:
+
+```bash
+curl http://127.0.0.1:3000/api/health
+```
+
+Erwartete Antwort:
+
+```json
+{"ok":true}
+```
+
+## Daten und Backups
+
+Die Datenbank und hochgeladenen Bilddateien liegen auf dem Pi unter:
+
+```text
+/home/simon/apps/DSA/data/dsa.db
+/home/simon/apps/DSA/data/uploads/
+```
+
+Für ein konsistentes manuelles Backup:
+
+```bash
+mkdir -p ~/backups
+sqlite3 ~/apps/DSA/data/dsa.db ".backup '$HOME/backups/dsa-$(date +%F).db'"
+tar -czf "$HOME/backups/dsa-uploads-$(date +%F).tar.gz" -C ~/apps/DSA data/uploads
+```
+
+Die Dateien `.env`, `data/` und `*.db` werden bewusst nicht versioniert.
+
+## Sicherheit
+
+- Passwörter werden mit `scrypt` und individuellem Salt gespeichert.
+- Sitzungen verwenden zufällige Token in `HttpOnly`- und `SameSite=Strict`-Cookies.
+- Die API lauscht nur auf `127.0.0.1`; Zugriffe laufen über Nginx.
+- Karten dürfen höchstens 20 MB sowie Helden- und Monstertokens höchstens 2 MB groß sein. Der Server prüft Dateityp und die Signatur von PNG-, JPG- und WebP-Dateien.
+- Für einen späteren Internetzugriff muss HTTPS eingerichtet und `COOKIE_SECURE=true` gesetzt werden.

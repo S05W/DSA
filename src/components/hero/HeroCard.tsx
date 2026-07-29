@@ -6,15 +6,17 @@ import "./HeroCard.css";
 
 interface HeroCardProps {
   hero: Hero;
+  onDelete: (hero: Hero) => void;
 }
 
-function HeroCard({ hero }: HeroCardProps) {
+function HeroCard({ hero, onDelete }: HeroCardProps) {
   const freeAp = hero.adventurePoints - hero.spentAdventurePoints;
 
   return (
     <Card className={`hero-card hero-card-${hero.accent}`}>
       <div className="hero-card-visual">
         <div className="hero-card-pattern" />
+        <button type="button" className="hero-card-delete" title={`${hero.name} löschen`} aria-label={`${hero.name} löschen`} onClick={() => onDelete(hero)}>×</button>
         <span className="hero-card-initials">{hero.initials}</span>
         <Badge bg="dark" className="hero-card-level">
           {hero.experienceLevel}

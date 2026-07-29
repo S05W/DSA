@@ -1,16 +1,31 @@
 import type { Hero } from "../models/Hero";
+import { createId } from "../utils/id";
 import { createDefaultTalents } from "./talents";
+import { createDefaultBody } from "./body";
 
-export function createDefaultHero(ownerId: string): Hero {
+type HeroIdentity = Pick<Hero, "name" | "profession" | "species" | "culture" | "experienceLevel">;
+
+function initialsFor(name: string) {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 3)
+    .map((part) => part[0]?.toUpperCase())
+    .join("") || "?";
+}
+
+export function createDefaultHero(ownerId: string, identity: Partial<HeroIdentity> = {}): Hero {
+  const name = identity.name?.trim() || "Neuer Held";
   return {
-    id: 1,
+    id: createId(),
     ownerId,
-    name: "Aurelius von Gareth",
-    title: "Adept der Kampfmagie",
-    profession: "Gildenmagier · Feldmagier",
-    species: "Mensch",
-    culture: "Mittelreich",
-    experienceLevel: "Erfahren",
+    sessionActive: false,
+    name,
+    title: "",
+    profession: identity.profession?.trim() || "Noch nicht festgelegt",
+    species: identity.species?.trim() || "Mensch",
+    culture: identity.culture?.trim() || "Noch nicht festgelegt",
+    experienceLevel: identity.experienceLevel?.trim() || "Erfahren",
     adventurePoints: 1200,
     spentAdventurePoints: 1184,
     lifePoints: 25,
@@ -20,9 +35,9 @@ export function createDefaultHero(ownerId: string): Hero {
     fatePoints: 3,
     maxFatePoints: 3,
     description:
-      "Ein disziplinierter Feldmagier aus Gareth, der offensive Zauberei mit Heilkunst und alchemistischem Wissen verbindet. Sein hölzerner Stab trägt einen eingelassenen Smaragd und begleitet ihn seit seiner Akademiezeit.",
-    quote: "Wissen schützt. Vorbereitung entscheidet.",
-    initials: "AvG",
+      "Hier kannst du die Geschichte, Ziele und Besonderheiten dieses Helden festhalten.",
+    quote: "Das Abenteuer beginnt.",
+    initials: initialsFor(name),
     accent: "emerald",
     attributes: [
       { short: "MU", name: "Mut", value: 14 },
@@ -35,17 +50,29 @@ export function createDefaultHero(ownerId: string): Hero {
       { short: "KK", name: "Körperkraft", value: 10 },
     ],
     talents: createDefaultTalents(),
-    spells: [
-      { name: "Ignifaxius", check: "MU / KL / CH", value: 10, cost: "8 AsP" },
-      { name: "Fulminictus", check: "MU / IN / KO", value: 10, cost: "8 AsP" },
-      { name: "Balsam Salabunde", check: "KL / IN / FF", value: 9, cost: "variabel" },
-      { name: "Blitz dich find", check: "MU / IN / CH", value: 8, cost: "4 AsP" },
+    spells: [],
+    combat: {
+      attack: 12,
+      parry: 9,
+      dodge: 7,
+      initiative: 13,
+      speed: 8,
+      armor: 0,
+      techniques: [
+        { id: createId(), name: "Schwerter", kind: "melee", skill: 10, attack: 12, parry: 9, damage: "1W6+4", notes: "" },
+        { id: createId(), name: "Bögen", kind: "ranged", skill: 10, attack: 11, parry: null, damage: "1W6+4", notes: "" },
+      ],
+    },
+    languages: [{ id: createId(), name: "Garethi", level: 3, script: "Kusliker Zeichen", notes: "Muttersprache" }],
+    money: { ducats: 0, silver: 0, heller: 0 },
+    magicalSpecialAbilities: [],
+    cantrips: [],
+    resistances: [
+      { id: createId(), name: "Feuerschutz", protection: 0, immune: false, notes: "" },
+      { id: createId(), name: "Windschutz", protection: 0, immune: false, notes: "" },
+      { id: createId(), name: "Energieschutz", protection: 0, immune: false, notes: "" },
     ],
-    equipment: [
-      { id: crypto.randomUUID(), name: "Magierstab", quantity: 1, notes: "Holzstab mit Smaragd" },
-      { id: crypto.randomUUID(), name: "Zauberbuch", quantity: 1, notes: "" },
-      { id: crypto.randomUUID(), name: "Alchimistenbesteck", quantity: 1, notes: "" },
-      { id: crypto.randomUUID(), name: "Robuste Reisekleidung", quantity: 1, notes: "" },
-    ],
+    equipment: [],
+    body: createDefaultBody(),
   };
 }

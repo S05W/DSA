@@ -1,0 +1,21 @@
+[Unit]
+Description=DSA Heldenbogen API
+After=network.target
+
+[Service]
+Type=simple
+User=simon
+Group=simon
+WorkingDirectory=/home/simon/apps/DSA
+Environment=NODE_ENV=production
+Environment=NVM_DIR=/home/simon/.nvm
+Environment=NODE_VERSION=24
+Environment=DATABASE_PATH=/home/simon/apps/DSA/data/dsa.db
+ExecStart=/home/simon/.nvm/nvm-exec node server/server.mjs
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
