@@ -1,7 +1,9 @@
 import type {
   BodyPartId,
   BodyState,
+  CharacterTrait,
   EquipmentItem,
+  EquipmentItemType,
   EquipmentSlotId,
   Hero,
   NamedFeature,
@@ -74,16 +76,46 @@ function normalizeNamedFeature(entry: NamedFeature): NamedFeature {
   };
 }
 
+function normalizeTrait(entry: CharacterTrait): CharacterTrait {
+  return {
+    id: typeof entry.id === "string" && entry.id ? entry.id : createId(),
+    name: typeof entry.name === "string" ? entry.name : "",
+    level: Math.max(1, Math.round(finiteNumber(entry.level, 1))),
+    apValue: Math.max(0, Math.round(finiteNumber(entry.apValue))),
+    description: typeof entry.description === "string" ? entry.description : "",
+    requirements: typeof entry.requirements === "string" ? entry.requirements : "",
+  };
+}
+
 function normalizeEquipment(item: EquipmentItem): EquipmentItem {
   const allowedSlots = Array.isArray(item.allowedSlots)
     ? item.allowedSlots.filter((slot): slot is EquipmentSlotId => equipmentSlots.some((definition) => definition.id === slot))
     : [];
+  const validTypes: EquipmentItemType[] = ["general", "weapon", "armor", "shield"];
+  const category = typeof item.category === "string" ? item.category.toLowerCase() : "";
+  const inferredType: EquipmentItemType = category.includes("schild")
+    ? "shield"
+    : category.includes("waffe")
+      ? "weapon"
+      : category.includes("rüstung") || finiteNumber(item.armor) > 0
+        ? "armor"
+        : "general";
+  const itemType = validTypes.includes(item.itemType as EquipmentItemType)
+    ? item.itemType as EquipmentItemType
+    : inferredType;
   return {
     ...item,
     id: typeof item.id === "string" && item.id ? item.id : createId(),
     name: typeof item.name === "string" ? item.name : "Unbenannter Gegenstand",
     quantity: Math.max(0, Math.round(finiteNumber(item.quantity, 1))),
     notes: typeof item.notes === "string" ? item.notes : "",
+    itemType,
+    armor: Math.max(0, Math.round(finiteNumber(item.armor))),
+    encumbrance: Math.max(0, Math.round(finiteNumber(item.encumbrance))),
+    attackModifier: Math.round(finiteNumber(item.attackModifier)),
+    parryModifier: Math.round(finiteNumber(item.parryModifier)),
+    ammunition: Math.max(0, Math.round(finiteNumber(item.ammunition))),
+    weaponKind: item.weaponKind === "ranged" ? "ranged" : "melee",
     showOnBody: Boolean(item.showOnBody),
     allowedSlots,
   };
@@ -144,7 +176,18 @@ export function normalizeHero(hero: Hero): Hero {
       initiative: finiteNumber(hero.combat?.initiative),
       speed: finiteNumber(hero.combat?.speed, 8),
       armor: finiteNumber(hero.combat?.armor),
-      techniques: Array.isArray(hero.combat?.techniques) ? hero.combat.techniques : [],
+      techniques: (Array.isArray(hero.combat?.techniques) ? hero.combat.techniques : []).map((entry) => ({
+        ...entry,
+        id: typeof entry.id === "string" && entry.id ? entry.id : createId(),
+        name: typeof entry.name === "string" ? entry.name : "",
+        kind: entry.kind === "ranged" ? "ranged" : "melee",
+        skill: Math.max(0, finiteNumber(entry.skill)),
+        attack: Math.max(0, finiteNumber(entry.attack)),
+        parry: entry.kind === "ranged" ? null : Math.max(0, finiteNumber(entry.parry)),
+        primaryAttribute: typeof entry.primaryAttribute === "string" ? entry.primaryAttribute : "",
+        improvementCost: typeof entry.improvementCost === "string" ? entry.improvementCost : "",
+        notes: typeof entry.notes === "string" ? entry.notes : "",
+      })),
     },
     languages: Array.isArray(hero.languages) ? hero.languages : [],
     money: {
@@ -152,6 +195,8 @@ export function normalizeHero(hero: Hero): Hero {
       silver: finiteNumber(hero.money?.silver),
       heller: finiteNumber(hero.money?.heller),
     },
+    advantages: (Array.isArray(hero.advantages) ? hero.advantages : []).map(normalizeTrait),
+    disadvantages: (Array.isArray(hero.disadvantages) ? hero.disadvantages : []).map(normalizeTrait),
     magicalSpecialAbilities: (Array.isArray(hero.magicalSpecialAbilities) ? hero.magicalSpecialAbilities : []).map(normalizeNamedFeature),
     cantrips: (Array.isArray(hero.cantrips) ? hero.cantrips : []).map(normalizeNamedFeature),
     resistances: Array.isArray(hero.resistances) ? hero.resistances : [],

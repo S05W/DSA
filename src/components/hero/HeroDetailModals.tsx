@@ -2,7 +2,7 @@ import Button from "react-bootstrap/Button";
 import Form from "react-bootstrap/Form";
 import Modal from "react-bootstrap/Modal";
 import { equipmentSlots } from "../../data/body";
-import type { EquipmentItem, EquipmentSlotId, SpellValue } from "../../models/Hero";
+import type { EquipmentItem, EquipmentItemType, EquipmentSlotId, SpellValue, WeaponKind } from "../../models/Hero";
 
 interface SpellDetailModalProps {
   spell: SpellValue | null;
@@ -55,10 +55,33 @@ export function EquipmentDetailModal({ item, setup, equippedAt, onHide, onChange
         <div className="detail-form-grid">
           <DetailField label="Name" value={item.name} setup={setup} onChange={(value) => onChange({ name: value })} />
           <DetailField label="Anzahl" value={String(item.quantity)} type="number" setup={setup} onChange={(value) => onChange({ quantity: Math.max(1, Number(value)) })} />
+          <Form.Group><Form.Label>Gegenstandsart</Form.Label><Form.Select value={item.itemType ?? "general"} disabled={!setup} onChange={(event) => onChange({ itemType: event.target.value as EquipmentItemType })}><option value="general">Allgemein</option><option value="weapon">Waffe</option><option value="armor">Rüstung</option><option value="shield">Schild</option></Form.Select></Form.Group>
           <DetailField label="Kategorie" value={item.category ?? ""} setup={setup} onChange={(value) => onChange({ category: value })} placeholder="Waffe, Rüstung, Werkzeug …" />
           <DetailField label="Gewicht" value={item.weight ?? ""} setup={setup} onChange={(value) => onChange({ weight: value })} />
-          <DetailField label="Rüstungsschutz" value={String(item.armor ?? 0)} type="number" setup={setup} onChange={(value) => onChange({ armor: Math.max(0, Number(value)) })} />
           <DetailField label="Wert" value={item.value ?? ""} setup={setup} onChange={(value) => onChange({ value })} placeholder="z. B. 15 Silbertaler" />
+          {item.itemType === "weapon" && <>
+            <Form.Group><Form.Label>Einsatzart</Form.Label><Form.Select value={item.weaponKind ?? "melee"} disabled={!setup} onChange={(event) => onChange({ weaponKind: event.target.value as WeaponKind })}><option value="melee">Nahkampf</option><option value="ranged">Fernkampf</option></Form.Select></Form.Group>
+            <DetailField label="Kampftechnik" value={item.combatTechnique ?? ""} setup={setup} onChange={(value) => onChange({ combatTechnique: value })} placeholder="z. B. Schwerter" />
+            <DetailField label="Trefferpunkte" value={item.damage ?? ""} setup={setup} onChange={(value) => onChange({ damage: value })} placeholder="z. B. 1W6+4" />
+            <DetailField label="Schadensschwelle" value={item.damageThreshold ?? ""} setup={setup} onChange={(value) => onChange({ damageThreshold: value })} placeholder="z. B. KK 14" />
+            <DetailField label="AT-Modifikator" value={String(item.attackModifier ?? 0)} type="number" setup={setup} onChange={(value) => onChange({ attackModifier: Number(value) || 0 })} />
+            <DetailField label="PA-Modifikator" value={String(item.parryModifier ?? 0)} type="number" setup={setup} onChange={(value) => onChange({ parryModifier: Number(value) || 0 })} />
+            {item.weaponKind === "ranged" ? <>
+              <DetailField label="Reichweiten" value={item.range ?? ""} setup={setup} onChange={(value) => onChange({ range: value })} placeholder="nah / mittel / weit" />
+              <DetailField label="Ladezeit" value={item.reloadTime ?? ""} setup={setup} onChange={(value) => onChange({ reloadTime: value })} />
+              <DetailField label="Munition" value={String(item.ammunition ?? 0)} type="number" setup={setup} onChange={(value) => onChange({ ammunition: Math.max(0, Number(value)) })} />
+            </> : <DetailField label="Reichweite" value={item.reach ?? ""} setup={setup} onChange={(value) => onChange({ reach: value })} placeholder="kurz / mittel / lang" />}
+          </>}
+          {item.itemType === "armor" && <>
+            <DetailField label="Rüstungsschutz" value={String(item.armor ?? 0)} type="number" setup={setup} onChange={(value) => onChange({ armor: Math.max(0, Number(value)) })} />
+            <DetailField label="Belastung" value={String(item.encumbrance ?? 0)} type="number" setup={setup} onChange={(value) => onChange({ encumbrance: Math.max(0, Number(value)) })} />
+            <DetailField label="Zusätzliche Abzüge" value={item.additionalPenalties ?? ""} setup={setup} onChange={(value) => onChange({ additionalPenalties: value })} />
+          </>}
+          {item.itemType === "shield" && <>
+            <DetailField label="Kampftechnik" value={item.combatTechnique ?? ""} setup={setup} onChange={(value) => onChange({ combatTechnique: value })} placeholder="Schilde" />
+            <DetailField label="AT-Modifikator" value={String(item.attackModifier ?? 0)} type="number" setup={setup} onChange={(value) => onChange({ attackModifier: Number(value) || 0 })} />
+            <DetailField label="PA-Modifikator" value={String(item.parryModifier ?? 0)} type="number" setup={setup} onChange={(value) => onChange({ parryModifier: Number(value) || 0 })} />
+          </>}
           <DetailField label="Beschreibung" value={item.description ?? ""} setup={setup} onChange={(value) => onChange({ description: value })} wide multiline />
           <DetailField label="Notizen" value={item.notes} setup={setup} onChange={(value) => onChange({ notes: value })} wide multiline />
           <div className="detail-wide body-visibility-setting">

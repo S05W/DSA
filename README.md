@@ -14,7 +14,7 @@ Talente zeigen ihre drei Eigenschaftsproben, während eine kompakte Eigenschafts
 
 Talent- und Zauberproben können direkt als 3W20-Probe ausgeführt werden. Die Auswertung zeigt jeden Einzelwurf, die verbrauchten Fertigkeitspunkte, Erfolg oder Misserfolg und die erreichte Qualitätsstufe. Erleichterungen und Erschwernisse lassen sich vor dem Wurf einstellen.
 
-Der Kampf-Tab verwaltet AT, PA, Ausweichen, Initiative, Geschwindigkeit und Rüstungsschutz. Kampftechniken sowie Sprachen und Schriften stehen zusätzlich unter den Talenten zur Verfügung. Die Übersicht enthält einen Geldbeutel für Dukaten, Silbertaler und Heller. Zaubertricks, magische Sonderfertigkeiten sowie ein eigener Bereich für Resistenzen und Immunitäten ergänzen den Heldenbogen.
+Der Kampf-Tab verwaltet AT, PA, Ausweichen, Initiative, Geschwindigkeit und Rüstungsschutz sowie Kampftechniken. Waffen, Schilde und Rüstungen werden als Inventargegenstände gespeichert und erscheinen mit ihren kampfrelevanten Werten automatisch auch im Kampfbereich. Ein eigener Tab erfasst Vorteile und Nachteile mitsamt Stufen, AP-Werten, Regeltexten und Voraussetzungen. Sprachen und Schriften stehen bei den Talenten zur Verfügung. Die Übersicht enthält einen Geldbeutel für Dukaten, Silbertaler und Heller. Zaubertricks, magische Sonderfertigkeiten sowie ein eigener Bereich für Resistenzen und Immunitäten ergänzen den Heldenbogen.
 
 ## Meisteransicht
 

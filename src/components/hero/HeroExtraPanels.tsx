@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from "react";
 import Button from "react-bootstrap/Button";
 import Form from "react-bootstrap/Form";
-import type { CombatTechnique, Hero, LanguageKnowledge, NamedFeature, ResistanceEntry } from "../../models/Hero";
+import type { CharacterTrait, CombatTechnique, EquipmentItem, EquipmentItemType, Hero, LanguageKnowledge, NamedFeature, ResistanceEntry, WeaponKind } from "../../models/Hero";
 import { createId } from "../../utils/id";
 
 type HeroUpdater = (updater: (hero: Hero) => Hero) => void;
@@ -17,7 +17,7 @@ export function MoneyPouchPanel({ hero, updateHero }: { hero: Hero; updateHero: 
   </div></article>;
 }
 
-export function CombatPanel({ hero, updateHero, setup }: { hero: Hero; updateHero: HeroUpdater; setup: boolean }) {
+export function CombatPanel({ hero, updateHero, setup, onInspectItem }: { hero: Hero; updateHero: HeroUpdater; setup: boolean; onInspectItem: (itemId: string) => void }) {
   const stats: { field: keyof Omit<Hero["combat"], "techniques">; label: string; short: string }[] = [
     { field: "attack", label: "Attacke", short: "AT" }, { field: "parry", label: "Parade", short: "PA" },
     { field: "dodge", label: "Ausweichen", short: "AW" }, { field: "initiative", label: "Initiative", short: "INI" },
@@ -26,7 +26,64 @@ export function CombatPanel({ hero, updateHero, setup }: { hero: Hero; updateHer
   function setStat(field: keyof Omit<Hero["combat"], "techniques">, value: number) {
     updateHero((current) => ({ ...current, combat: { ...current.combat, [field]: Math.max(0, Math.min(99, Number.isFinite(value) ? value : 0)) } }));
   }
-  return <section className="dsa-panel tab-panel combat-panel"><div className="panel-heading"><span>Kampfwerte</span><small>{setup ? "Werte bearbeiten" : "AT, PA und Verteidigung"}</small></div><div className="combat-stat-grid">{stats.map((stat) => <article key={stat.field}><span>{stat.short}</span>{setup ? <input type="number" min={0} max={99} value={hero.combat[stat.field]} onChange={(event) => setStat(stat.field, Number(event.target.value))} /> : <strong>{hero.combat[stat.field]}</strong>}<small>{stat.label}</small></article>)}</div><p className="combat-technique-note">Schwerter, Bögen und weitere Kampftechniken findest du unten im Tab „Talente“.</p></section>;
+  return <section className="dsa-panel tab-panel combat-panel">
+    <div className="panel-heading"><span>Kampf</span><small>{setup ? "Kampfwerte, Techniken und Ausrüstung bearbeiten" : "Alle kampfrelevanten Werte"}</small></div>
+    <div className="combat-stat-grid">{stats.map((stat) => <article key={stat.field}><span>{stat.short}</span>{setup ? <input type="number" min={0} max={99} value={hero.combat[stat.field]} onChange={(event) => setStat(stat.field, Number(event.target.value))} /> : <strong>{hero.combat[stat.field]}</strong>}<small>{stat.label}</small></article>)}</div>
+    <CombatTechniquesSection hero={hero} updateHero={updateHero} setup={setup} embedded />
+    <CombatEquipmentSection hero={hero} updateHero={updateHero} setup={setup} onInspectItem={onInspectItem} />
+  </section>;
+}
+
+function signed(value: number | undefined) {
+  const safe = Number(value) || 0;
+  return safe > 0 ? `+${safe}` : String(safe);
+}
+
+function CombatEquipmentSection({ hero, updateHero, setup, onInspectItem }: { hero: Hero; updateHero: HeroUpdater; setup: boolean; onInspectItem: (itemId: string) => void }) {
+  const [draft, setDraft] = useState({ name: "", itemType: "weapon" as Extract<EquipmentItemType, "weapon" | "shield">, weaponKind: "melee" as WeaponKind, combatTechnique: "", damage: "" });
+  const combatItems = hero.equipment.filter((item) => item.itemType === "weapon" || item.itemType === "shield" || item.itemType === "armor");
+
+  function addItem(event: FormEvent) {
+    event.preventDefault();
+    if (!draft.name.trim()) return;
+    const item: EquipmentItem = {
+      id: createId(),
+      name: draft.name.trim(),
+      quantity: 1,
+      notes: "",
+      itemType: draft.itemType,
+      category: draft.itemType === "shield" ? "Schild" : "Waffe",
+      weaponKind: draft.weaponKind,
+      combatTechnique: draft.combatTechnique.trim(),
+      damage: draft.damage.trim(),
+      attackModifier: 0,
+      parryModifier: 0,
+      ammunition: 0,
+      showOnBody: true,
+      allowedSlots: ["rightHand", "leftHand"],
+    };
+    updateHero((current) => ({ ...current, equipment: [...current.equipment, item] }));
+    setDraft({ name: "", itemType: "weapon", weaponKind: "melee", combatTechnique: "", damage: "" });
+  }
+
+  return <section className="subsection-card combat-equipment-section">
+    <div className="subsection-heading"><div><span>Waffen, Schilde & Rüstung</span><small>Diese Einträge stammen direkt aus dem Inventar.</small></div></div>
+    {setup && <Form className="combat-item-add-form" onSubmit={addItem}>
+      <Form.Control required value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} placeholder="z. B. Langschwert" />
+      <Form.Select value={draft.itemType} onChange={(event) => setDraft({ ...draft, itemType: event.target.value as typeof draft.itemType })}><option value="weapon">Waffe</option><option value="shield">Schild</option></Form.Select>
+      {draft.itemType === "weapon" && <Form.Select value={draft.weaponKind} onChange={(event) => setDraft({ ...draft, weaponKind: event.target.value as WeaponKind })}><option value="melee">Nahkampf</option><option value="ranged">Fernkampf</option></Form.Select>}
+      <Form.Control value={draft.combatTechnique} onChange={(event) => setDraft({ ...draft, combatTechnique: event.target.value })} placeholder="Kampftechnik" />
+      {draft.itemType === "weapon" && <Form.Control value={draft.damage} onChange={(event) => setDraft({ ...draft, damage: event.target.value })} placeholder="Schaden, z. B. 1W6+4" />}
+      <Button type="submit" className="dsa-primary-button">Ins Inventar</Button>
+    </Form>}
+    {combatItems.length ? <div className="combat-item-grid">{combatItems.map((item) => <article key={item.id} className={`combat-item-card ${item.itemType}`}>
+      <div className="combat-item-title"><div><span>{item.itemType === "weapon" ? item.weaponKind === "ranged" ? "Fernkampfwaffe" : "Nahkampfwaffe" : item.itemType === "shield" ? "Schild" : "Rüstung"}</span><strong>{item.name}</strong></div><button type="button" onClick={() => onInspectItem(item.id)}>{setup ? "Bearbeiten" : "Details"}</button></div>
+      {item.itemType === "armor"
+        ? <dl><div><dt>RS</dt><dd>{item.armor ?? 0}</dd></div><div><dt>BE</dt><dd>{item.encumbrance ?? 0}</dd></div><div><dt>Gewicht</dt><dd>{item.weight || "–"}</dd></div></dl>
+        : <dl><div><dt>Technik</dt><dd>{item.combatTechnique || "–"}</dd></div>{item.itemType === "weapon" && <div><dt>TP</dt><dd>{item.damage || "–"}</dd></div>}<div><dt>AT</dt><dd>{signed(item.attackModifier)}</dd></div><div><dt>PA</dt><dd>{signed(item.parryModifier)}</dd></div>{item.weaponKind === "ranged" && <div><dt>Munition</dt><dd>{item.ammunition ?? 0}</dd></div>}</dl>}
+      {(item.reach || item.range || item.reloadTime || item.notes) && <p>{[item.reach && `Reichweite ${item.reach}`, item.range && `Distanzen ${item.range}`, item.reloadTime && `Ladezeit ${item.reloadTime}`, item.notes].filter(Boolean).join(" · ")}</p>}
+    </article>)}</div> : <p className="empty-status">Noch keine Waffen, Schilde oder Rüstungen im Inventar.</p>}
+  </section>;
 }
 
 export function CombatTechniquesSection({ hero, updateHero, setup, embedded = false }: { hero: Hero; updateHero: HeroUpdater; setup: boolean; embedded?: boolean }) {
@@ -37,7 +94,7 @@ export function CombatTechniquesSection({ hero, updateHero, setup, embedded = fa
   function addTechnique(event: FormEvent) {
     event.preventDefault();
     if (!draft.name.trim()) return;
-    const technique: CombatTechnique = { id: createId(), name: draft.name.trim(), kind: draft.kind, skill: 0, attack: 0, parry: draft.kind === "melee" ? 0 : null, damage: "", notes: "" };
+    const technique: CombatTechnique = { id: createId(), name: draft.name.trim(), kind: draft.kind, skill: 0, attack: 0, parry: draft.kind === "melee" ? 0 : null, primaryAttribute: "", improvementCost: "", notes: "" };
     updateHero((current) => ({ ...current, combat: { ...current.combat, techniques: [...current.combat.techniques, technique] } }));
     setDraft({ name: "", kind: "melee" });
   }
@@ -50,10 +107,11 @@ export function CombatTechniquesSection({ hero, updateHero, setup, embedded = fa
       <label>KTaW<input type="number" min={0} value={technique.skill} onChange={(event) => patchTechnique(technique.id, { skill: Math.max(0, Number(event.target.value)) })} /></label>
       <label>AT<input type="number" min={0} value={technique.attack} onChange={(event) => patchTechnique(technique.id, { attack: Math.max(0, Number(event.target.value)) })} /></label>
       <label>PA<input type="number" min={0} disabled={technique.kind === "ranged"} value={technique.parry ?? ""} onChange={(event) => patchTechnique(technique.id, { parry: Math.max(0, Number(event.target.value)) })} /></label>
-      <label>Schaden<input value={technique.damage} onChange={(event) => patchTechnique(technique.id, { damage: event.target.value })} /></label>
+      <label>Leiteigenschaft<input value={technique.primaryAttribute} onChange={(event) => patchTechnique(technique.id, { primaryAttribute: event.target.value })} placeholder="GE/KK" /></label>
+      <label>Steigerung<input value={technique.improvementCost} onChange={(event) => patchTechnique(technique.id, { improvementCost: event.target.value })} placeholder="C" /></label>
       <input className="technique-notes" value={technique.notes} onChange={(event) => patchTechnique(technique.id, { notes: event.target.value })} placeholder="Notiz" />
       <button type="button" className="list-delete" onClick={() => removeTechnique(technique.id)}>Entfernen</button>
-    </> : <><div className="technique-title"><strong>{technique.name}</strong><span>{technique.kind === "melee" ? "Nahkampf" : "Fernkampf"}</span></div><dl><div><dt>KTaW</dt><dd>{technique.skill}</dd></div><div><dt>AT</dt><dd>{technique.attack}</dd></div><div><dt>PA</dt><dd>{technique.parry ?? "–"}</dd></div><div><dt>Schaden</dt><dd>{technique.damage || "–"}</dd></div></dl>{technique.notes && <p>{technique.notes}</p>}</>}</article>)}</div> : <p className="empty-status">Noch keine Kampftechniken eingetragen.</p>}
+    </> : <><div className="technique-title"><strong>{technique.name}</strong><span>{technique.kind === "melee" ? "Nahkampf" : "Fernkampf"}</span></div><dl><div><dt>KTaW</dt><dd>{technique.skill}</dd></div><div><dt>AT</dt><dd>{technique.attack}</dd></div><div><dt>PA</dt><dd>{technique.parry ?? "–"}</dd></div><div><dt>Leiteig.</dt><dd>{technique.primaryAttribute || "–"}</dd></div><div><dt>Steigerung</dt><dd>{technique.improvementCost || "–"}</dd></div></dl>{technique.notes && <p>{technique.notes}</p>}</>}</article>)}</div> : <p className="empty-status">Noch keine Kampftechniken eingetragen.</p>}
   </section>;
 }
 
@@ -70,6 +128,54 @@ function FeatureList({ title, subtitle, entries, setup, onChange }: { title: str
   const [name, setName] = useState("");
   function add(event: FormEvent) { event.preventDefault(); if (!name.trim()) return; onChange([...entries, { id: createId(), name: name.trim(), description: "" }]); setName(""); }
   return <section className="subsection-card magic-feature-list"><div className="subsection-heading"><div><span>{title}</span><small>{subtitle}</small></div></div>{setup && <Form className="compact-add-form language-add-form" onSubmit={add}><Form.Control required value={name} onChange={(event) => setName(event.target.value)} placeholder="Name" /><Button type="submit" className="dsa-primary-button">Hinzufügen</Button></Form>}{entries.length ? <div className="feature-grid">{entries.map((entry) => <article key={entry.id}>{setup ? <><input value={entry.name} onChange={(event) => onChange(entries.map((candidate) => candidate.id === entry.id ? { ...candidate, name: event.target.value } : candidate))} /><textarea value={entry.description} onChange={(event) => onChange(entries.map((candidate) => candidate.id === entry.id ? { ...candidate, description: event.target.value } : candidate))} placeholder="Beschreibung" /><button type="button" className="list-delete" onClick={() => onChange(entries.filter((candidate) => candidate.id !== entry.id))}>Entfernen</button></> : <><strong>{entry.name}</strong><p>{entry.description || "Keine Beschreibung"}</p></>}</article>)}</div> : <p className="empty-status">Noch keine Einträge vorhanden.</p>}</section>;
+}
+
+function TraitList({ title, subtitle, entries, setup, onChange, disadvantage = false }: { title: string; subtitle: string; entries: CharacterTrait[]; setup: boolean; onChange: (entries: CharacterTrait[]) => void; disadvantage?: boolean }) {
+  const [draft, setDraft] = useState({ name: "", level: 1, apValue: 0 });
+  function patch(id: string, change: Partial<CharacterTrait>) {
+    onChange(entries.map((entry) => entry.id === id ? { ...entry, ...change } : entry));
+  }
+  function add(event: FormEvent) {
+    event.preventDefault();
+    if (!draft.name.trim()) return;
+    onChange([...entries, { id: createId(), name: draft.name.trim(), level: Math.max(1, draft.level), apValue: Math.max(0, draft.apValue), description: "", requirements: "" }]);
+    setDraft({ name: "", level: 1, apValue: 0 });
+  }
+  const total = entries.reduce((sum, entry) => sum + entry.apValue * entry.level, 0);
+  return <section className={`subsection-card trait-list ${disadvantage ? "disadvantage" : "advantage"}`}>
+    <div className="subsection-heading"><div><span>{title}</span><small>{subtitle}</small></div><b>{total} AP</b></div>
+    {setup && <Form className="trait-add-form" onSubmit={add}>
+      <Form.Control required value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} placeholder={disadvantage ? "z. B. Verpflichtungen" : "z. B. Hohe Lebenskraft"} />
+      <Form.Group><Form.Label>Stufe</Form.Label><Form.Control type="number" min={1} value={draft.level} onChange={(event) => setDraft({ ...draft, level: Math.max(1, Number(event.target.value)) })} /></Form.Group>
+      <Form.Group><Form.Label>AP je Stufe</Form.Label><Form.Control type="number" min={0} value={draft.apValue} onChange={(event) => setDraft({ ...draft, apValue: Math.max(0, Number(event.target.value)) })} /></Form.Group>
+      <Button type="submit" className="dsa-primary-button">Hinzufügen</Button>
+    </Form>}
+    {entries.length ? <div className="trait-grid">{entries.map((entry) => <article key={entry.id}>
+      {setup ? <>
+        <div className="trait-edit-heading"><input value={entry.name} onChange={(event) => patch(entry.id, { name: event.target.value })} /><label>Stufe<input type="number" min={1} value={entry.level} onChange={(event) => patch(entry.id, { level: Math.max(1, Number(event.target.value)) })} /></label><label>AP<input type="number" min={0} value={entry.apValue} onChange={(event) => patch(entry.id, { apValue: Math.max(0, Number(event.target.value)) })} /></label></div>
+        <textarea value={entry.description} onChange={(event) => patch(entry.id, { description: event.target.value })} placeholder="Regelwirkung / Beschreibung" />
+        <input value={entry.requirements} onChange={(event) => patch(entry.id, { requirements: event.target.value })} placeholder="Voraussetzungen" />
+        <button type="button" className="list-delete" onClick={() => onChange(entries.filter((candidate) => candidate.id !== entry.id))}>Entfernen</button>
+      </> : <>
+        <div className="trait-card-heading"><div><strong>{entry.name}</strong><small>Stufe {entry.level}</small></div><b>{entry.apValue * entry.level} AP</b></div>
+        <p>{entry.description || "Keine Regelbeschreibung eingetragen."}</p>
+        {entry.requirements && <small>Voraussetzungen: {entry.requirements}</small>}
+      </>}
+    </article>)}</div> : <p className="empty-status">Noch keine {title.toLowerCase()} eingetragen.</p>}
+  </section>;
+}
+
+export function TraitsPanel({ hero, updateHero, setup }: { hero: Hero; updateHero: HeroUpdater; setup: boolean }) {
+  const advantageAp = hero.advantages.reduce((sum, entry) => sum + entry.apValue * entry.level, 0);
+  const disadvantageAp = hero.disadvantages.reduce((sum, entry) => sum + entry.apValue * entry.level, 0);
+  return <section className="dsa-panel tab-panel traits-panel">
+    <div className="panel-heading"><span>Vorteile & Nachteile</span><small>{setup ? "Einträge und AP-Werte bearbeiten" : "Besondere Eigenschaften des Helden"}</small></div>
+    <div className="trait-summary"><article><span>Vorteile</span><strong>{advantageAp} AP</strong><small>{hero.advantages.length} Einträge</small></article><article><span>Nachteile</span><strong>{disadvantageAp} AP</strong><small>{hero.disadvantages.length} Einträge</small></article><article><span>Differenz</span><strong>{advantageAp - disadvantageAp} AP</strong><small>Nur als Übersicht, keine automatische AP-Buchung</small></article></div>
+    <div className="trait-columns">
+      <TraitList title="Vorteile" subtitle="Begabungen, besondere Herkunft und körperliche Vorzüge" entries={hero.advantages} setup={setup} onChange={(entries) => updateHero((current) => ({ ...current, advantages: entries }))} />
+      <TraitList title="Nachteile" subtitle="Verpflichtungen, Ängste und sonstige Einschränkungen" entries={hero.disadvantages} setup={setup} disadvantage onChange={(entries) => updateHero((current) => ({ ...current, disadvantages: entries }))} />
+    </div>
+  </section>;
 }
 
 export function MagicExtrasSection({ hero, updateHero, setup }: { hero: Hero; updateHero: HeroUpdater; setup: boolean }) {

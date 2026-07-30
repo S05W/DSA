@@ -59,12 +59,14 @@ export function createDefaultHero(ownerId: string, identity: Partial<HeroIdentit
       speed: 8,
       armor: 0,
       techniques: [
-        { id: createId(), name: "Schwerter", kind: "melee", skill: 10, attack: 12, parry: 9, damage: "1W6+4", notes: "" },
-        { id: createId(), name: "Bögen", kind: "ranged", skill: 10, attack: 11, parry: null, damage: "1W6+4", notes: "" },
+        { id: createId(), name: "Schwerter", kind: "melee", skill: 10, attack: 12, parry: 9, primaryAttribute: "GE/KK", improvementCost: "C", notes: "" },
+        { id: createId(), name: "Bögen", kind: "ranged", skill: 10, attack: 11, parry: null, primaryAttribute: "FF", improvementCost: "C", notes: "" },
       ],
     },
     languages: [{ id: createId(), name: "Garethi", level: 3, script: "Kusliker Zeichen", notes: "Muttersprache" }],
     money: { ducats: 0, silver: 0, heller: 0 },
+    advantages: [],
+    disadvantages: [],
     magicalSpecialAbilities: [],
     cantrips: [],
     resistances: [

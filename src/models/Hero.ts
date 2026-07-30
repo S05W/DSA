@@ -37,7 +37,9 @@ export interface CombatTechnique {
   skill: number;
   attack: number;
   parry: number | null;
-  damage: string;
+  primaryAttribute: string;
+  improvementCost: string;
+  damage?: string;
   notes: string;
 }
 
@@ -71,6 +73,15 @@ export interface NamedFeature {
   description: string;
 }
 
+export interface CharacterTrait {
+  id: string;
+  name: string;
+  level: number;
+  apValue: number;
+  description: string;
+  requirements: string;
+}
+
 export interface ResistanceEntry {
   id: string;
   name: string;
@@ -79,15 +90,31 @@ export interface ResistanceEntry {
   notes: string;
 }
 
+export type EquipmentItemType = "general" | "weapon" | "armor" | "shield";
+export type WeaponKind = "melee" | "ranged";
+
 export interface EquipmentItem {
   id: string;
   name: string;
   quantity: number;
   notes: string;
+  itemType?: EquipmentItemType;
   description?: string;
   category?: string;
   weight?: string;
   armor?: number;
+  encumbrance?: number;
+  additionalPenalties?: string;
+  weaponKind?: WeaponKind;
+  combatTechnique?: string;
+  damage?: string;
+  damageThreshold?: string;
+  attackModifier?: number;
+  parryModifier?: number;
+  reach?: string;
+  range?: string;
+  reloadTime?: string;
+  ammunition?: number;
   value?: string;
   showOnBody?: boolean;
   allowedSlots?: EquipmentSlotId[];
@@ -158,6 +185,8 @@ export interface Hero {
   combat: CombatState;
   languages: LanguageKnowledge[];
   money: MoneyPouch;
+  advantages: CharacterTrait[];
+  disadvantages: CharacterTrait[];
   magicalSpecialAbilities: NamedFeature[];
   cantrips: NamedFeature[];
   resistances: ResistanceEntry[];
