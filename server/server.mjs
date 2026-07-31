@@ -5,6 +5,7 @@ import { dirname, resolve } from "node:path";
 import { promisify } from "node:util";
 import { randomBytes, scrypt as scryptCallback, timingSafeEqual, createHash, randomUUID } from "node:crypto";
 import { DatabaseSync } from "node:sqlite";
+import { createKonohiko } from "./seed-data/konohiko.mjs";
 
 const scrypt = promisify(scryptCallback);
 const host = process.env.HOST ?? "127.0.0.1";
@@ -200,6 +201,15 @@ if (!currentHeroColumns.some((column) => column.name === "active")) {
   database.exec("ALTER TABLE heroes ADD COLUMN active INTEGER NOT NULL DEFAULT 0");
 }
 
+database.exec(`
+  CREATE TABLE IF NOT EXISTS hero_seeds (
+    seed_id TEXT NOT NULL,
+    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    applied_at TEXT NOT NULL,
+    PRIMARY KEY (seed_id, user_id)
+  );
+`);
+
 const queries = {
   userByName: database.prepare("SELECT id, username, password_hash, role FROM users WHERE username = ? COLLATE NOCASE"),
   userBySession: database.prepare(`
@@ -220,6 +230,8 @@ const queries = {
     UPDATE heroes SET data = ?, active = ?, updated_at = ? WHERE user_id = ? AND hero_id = ?
   `),
   deleteHero: database.prepare("DELETE FROM heroes WHERE user_id = ? AND hero_id = ?"),
+  heroSeed: database.prepare("SELECT 1 FROM hero_seeds WHERE seed_id = ? AND user_id = ?"),
+  insertHeroSeed: database.prepare("INSERT INTO hero_seeds (seed_id, user_id, applied_at) VALUES (?, ?, ?)"),
   activeHeroesForMaster: database.prepare(`
     SELECT heroes.data, heroes.updated_at, users.username
     FROM heroes JOIN users ON users.id = heroes.user_id
@@ -324,6 +336,25 @@ const queries = {
   `),
   deleteHandout: database.prepare("DELETE FROM handouts WHERE id = ?"),
 };
+
+function installBundledHeroes(user) {
+  const seedId = "konohiko-v1";
+  if (user.username.toLocaleLowerCase("de-DE") !== "simon" || queries.heroSeed.get(seedId, user.id)) return;
+
+  const hero = createKonohiko(user.id);
+  const now = new Date().toISOString();
+  database.exec("BEGIN IMMEDIATE");
+  try {
+    if (!queries.heroById.get(user.id, hero.id)) {
+      queries.insertHero.run(hero.id, user.id, JSON.stringify(hero), hero.sessionActive ? 1 : 0, now, now);
+    }
+    queries.insertHeroSeed.run(seedId, user.id, now);
+    database.exec("COMMIT");
+  } catch (error) {
+    database.exec("ROLLBACK");
+    throw error;
+  }
+}
 
 function json(response, status, body, extraHeaders = {}) {
   response.writeHead(status, {
@@ -1190,6 +1221,7 @@ const server = createServer(async (request, response) => {
     if (request.method === "GET" && url.pathname === "/api/heroes") {
       const user = requireUser(request, response);
       if (!user) return;
+      installBundledHeroes(user);
       const heroes = queries.heroesByUser.all(user.id).map((row) => JSON.parse(row.data));
       return json(response, 200, { heroes });
     }

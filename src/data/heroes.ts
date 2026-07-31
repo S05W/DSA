@@ -67,6 +67,7 @@ export function createDefaultHero(ownerId: string, identity: Partial<HeroIdentit
     money: { ducats: 0, silver: 0, heller: 0 },
     advantages: [],
     disadvantages: [],
+    specialAbilities: [],
     magicalSpecialAbilities: [],
     cantrips: [],
     resistances: [

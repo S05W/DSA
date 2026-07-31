@@ -9,7 +9,7 @@ import type {
   NamedFeature,
 } from "../models/Hero";
 import { createId } from "../utils/id";
-import { talentCheckFor } from "./talents";
+import { createDefaultTalents, talentCheckFor } from "./talents";
 
 export const bodyPartDefinitions: { id: BodyPartId; label: string; maxDamage: number }[] = [
   { id: "head", label: "Kopf", maxDamage: 4 },
@@ -161,13 +161,32 @@ export function normalizeHero(hero: Hero): Hero {
     })).slice(-100),
   };
 
+  const storedTalents = Array.isArray(hero.talents) ? hero.talents : [];
+  const defaultTalents = createDefaultTalents().map((talent) => {
+    const stored = storedTalents.find((entry) => entry.name === talent.name);
+    return stored
+      ? {
+          ...talent,
+          ...stored,
+          category: talent.category,
+          value: Math.max(0, finiteNumber(stored.value)),
+          check: typeof stored.check === "string" && stored.check ? stored.check : talent.check,
+        }
+      : { ...talent, value: 0 };
+  });
+  const knownTalentNames = new Set(defaultTalents.map((talent) => talent.name));
+  const customTalents = storedTalents
+    .filter((talent) => !knownTalentNames.has(talent.name))
+    .map((talent) => ({
+      ...talent,
+      value: Math.max(0, finiteNumber(talent.value)),
+      check: typeof talent.check === "string" && talent.check ? talent.check : talentCheckFor(talent.name),
+    }));
+
   return {
     ...hero,
     sessionActive: Boolean(hero.sessionActive),
-    talents: (Array.isArray(hero.talents) ? hero.talents : []).map((talent) => ({
-      ...talent,
-      check: typeof talent.check === "string" && talent.check ? talent.check : talentCheckFor(talent.name),
-    })),
+    talents: [...defaultTalents, ...customTalents],
     spells: Array.isArray(hero.spells) ? hero.spells : [],
     combat: {
       attack: finiteNumber(hero.combat?.attack),
@@ -197,6 +216,7 @@ export function normalizeHero(hero: Hero): Hero {
     },
     advantages: (Array.isArray(hero.advantages) ? hero.advantages : []).map(normalizeTrait),
     disadvantages: (Array.isArray(hero.disadvantages) ? hero.disadvantages : []).map(normalizeTrait),
+    specialAbilities: (Array.isArray(hero.specialAbilities) ? hero.specialAbilities : []).map(normalizeNamedFeature),
     magicalSpecialAbilities: (Array.isArray(hero.magicalSpecialAbilities) ? hero.magicalSpecialAbilities : []).map(normalizeNamedFeature),
     cantrips: (Array.isArray(hero.cantrips) ? hero.cantrips : []).map(normalizeNamedFeature),
     resistances: Array.isArray(hero.resistances) ? hero.resistances : [],

@@ -187,6 +187,7 @@ export interface Hero {
   money: MoneyPouch;
   advantages: CharacterTrait[];
   disadvantages: CharacterTrait[];
+  specialAbilities: NamedFeature[];
   magicalSpecialAbilities: NamedFeature[];
   cantrips: NamedFeature[];
   resistances: ResistanceEntry[];

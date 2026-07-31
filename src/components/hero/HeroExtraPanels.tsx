@@ -175,6 +175,7 @@ export function TraitsPanel({ hero, updateHero, setup }: { hero: Hero; updateHer
       <TraitList title="Vorteile" subtitle="Begabungen, besondere Herkunft und körperliche Vorzüge" entries={hero.advantages} setup={setup} onChange={(entries) => updateHero((current) => ({ ...current, advantages: entries }))} />
       <TraitList title="Nachteile" subtitle="Verpflichtungen, Ängste und sonstige Einschränkungen" entries={hero.disadvantages} setup={setup} disadvantage onChange={(entries) => updateHero((current) => ({ ...current, disadvantages: entries }))} />
     </div>
+    <FeatureList title="Allgemeine Sonderfertigkeiten" subtitle="Spezialisierungen und weitere nichtmagische Fähigkeiten" entries={hero.specialAbilities} setup={setup} onChange={(entries) => updateHero((current) => ({ ...current, specialAbilities: entries }))} />
   </section>;
 }
 
