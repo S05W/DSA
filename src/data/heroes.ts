@@ -71,9 +71,9 @@ export function createDefaultHero(ownerId: string, identity: Partial<HeroIdentit
     magicalSpecialAbilities: [],
     cantrips: [],
     resistances: [
-      { id: createId(), name: "Feuerschutz", protection: 0, immune: false, notes: "" },
-      { id: createId(), name: "Windschutz", protection: 0, immune: false, notes: "" },
-      { id: createId(), name: "Energieschutz", protection: 0, immune: false, notes: "" },
+      { id: createId(), name: "Feuerschutz", protection: 0, immune: false, weak: false, notes: "" },
+      { id: createId(), name: "Windschutz", protection: 0, immune: false, weak: false, notes: "" },
+      { id: createId(), name: "Energieschutz", protection: 0, immune: false, weak: false, notes: "" },
     ],
     equipment: [],
     body: createDefaultBody(),

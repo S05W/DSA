@@ -8,9 +8,13 @@ function Sidebar({ heroName }: SidebarProps) {
   const { user, viewRole, setViewRole, logout } = useApp();
   const navigate = useNavigate();
 
-  function handleLogout() {
-    logout();
-    navigate("/login");
+  async function handleLogout() {
+    try {
+      await logout();
+      navigate("/login", { replace: true });
+    } catch {
+      window.alert("Abmelden fehlgeschlagen. Prüfe bitte kurz die Verbindung zum DSA-Server.");
+    }
   }
 
   return (
@@ -43,6 +47,9 @@ function Sidebar({ heroName }: SidebarProps) {
           {viewRole === "master" && <NavLink to="/meister/server" className={({ isActive }) => `sidebar-link${isActive ? " active" : ""}`}>
             <span className="sidebar-icon">P</span><span className="sidebar-label">Pi-Status</span>
           </NavLink>}
+          <button type="button" className="sidebar-mobile-logout" onClick={() => void handleLogout()} aria-label="Abmelden" title="Abmelden">
+            <span className="sidebar-icon">×</span>
+          </button>
           {heroName && <div className="sidebar-context"><span>Geöffneter Held</span><strong>{heroName}</strong></div>}
         </nav>
       </div>
@@ -54,7 +61,7 @@ function Sidebar({ heroName }: SidebarProps) {
           setViewRole(nextRole);
           navigate(nextRole === "master" ? "/meister" : "/");
         }}>Zu {viewRole === "master" ? "Spieleransicht" : "Meisteransicht"} wechseln</button>}
-        <button type="button" className="sidebar-logout" onClick={handleLogout}>Abmelden</button>
+        <button type="button" className="sidebar-logout" onClick={() => void handleLogout()}>Abmelden</button>
         <small><span className="status-dot" />Automatisch gespeichert</small>
       </div>
     </aside>

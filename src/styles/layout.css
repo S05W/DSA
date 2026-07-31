@@ -411,9 +411,12 @@
 /* Resistenzen */
 .resistance-grid article { display: grid; grid-template-columns: minmax(0, 1fr) 100px; gap: 10px; }
 .resistance-grid article.immune { border-color: #98733f; background: #fbf3df; }
-.resistance-grid article > textarea, .resistance-grid article > .form-check, .resistance-grid article > small { grid-column: 1 / -1; }
+.resistance-grid article.weak { border-color: #ad5b5b; background: #fff0ed; }
+.resistance-grid article > textarea, .resistance-grid article > .resistance-switches, .resistance-grid article > small { grid-column: 1 / -1; }
+.resistance-switches { display: flex; flex-wrap: wrap; gap: 8px 24px; }
 .resistance-grid article > div { display: flex; align-items: center; justify-content: space-between; }
 .resistance-grid article > div span { padding: 4px 8px; border-radius: 999px; color: white; background: var(--ruby); font-size: .7rem; font-weight: 900; }
+.resistance-grid article > div span.weak-badge { background: #9d3333; }
 .resistance-grid article > b { text-align: right; font: 700 2rem Georgia, serif; color: var(--forest); }
 .resistance-grid article > small { color: var(--muted); }
 
@@ -529,6 +532,7 @@
 .master-simple-grid article span { font-size: .8rem; }
 .master-simple-grid article small { margin-top: 4px; }
 .master-simple-grid .master-immune { border-color: #b69355; background: #fbf3df; }
+.master-simple-grid .master-weak { border-color: #ad5b5b; background: #fff0ed; }
 .master-body-grid { display: grid; grid-template-columns: minmax(300px, .9fr) minmax(300px, 1.1fr); gap: 20px; }
 .master-body-grid .body-figure-card { min-height: 540px; }
 .master-body-grid .body-figure { height: 470px; }

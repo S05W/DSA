@@ -237,7 +237,7 @@ export function createKonohiko(ownerId) {
       feature("cantrip", 1, "Wind im Haar", null, "", ""),
     ],
     resistances: [
-      { id: "konohiko-resistance-1", name: "Feuerschaden", protection: 2, immune: false, notes: "Drachenblut: Purpurwurm" },
+      { id: "konohiko-resistance-1", name: "Feuerschaden", protection: 2, immune: false, weak: false, notes: "Drachenblut: Purpurwurm" },
     ],
     equipment: [
       {

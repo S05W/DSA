@@ -219,7 +219,13 @@ export function normalizeHero(hero: Hero): Hero {
     specialAbilities: (Array.isArray(hero.specialAbilities) ? hero.specialAbilities : []).map(normalizeNamedFeature),
     magicalSpecialAbilities: (Array.isArray(hero.magicalSpecialAbilities) ? hero.magicalSpecialAbilities : []).map(normalizeNamedFeature),
     cantrips: (Array.isArray(hero.cantrips) ? hero.cantrips : []).map(normalizeNamedFeature),
-    resistances: Array.isArray(hero.resistances) ? hero.resistances : [],
+    resistances: (Array.isArray(hero.resistances) ? hero.resistances : []).map((entry) => ({
+      ...entry,
+      protection: Math.max(0, finiteNumber(entry.protection)),
+      immune: Boolean(entry.immune),
+      weak: Boolean(entry.weak) && !entry.immune,
+      notes: typeof entry.notes === "string" ? entry.notes : "",
+    })),
     equipment,
     body,
   };

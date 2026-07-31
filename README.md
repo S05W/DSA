@@ -4,7 +4,7 @@ React-Frontend mit zentraler Node.js-API und SQLite-Datenbank. Jeder Benutzer ka
 
 Der Heldenbogen besitzt einen geschützten Spielmodus für laufende Ressourcen und einen Setup-Modus für Grunddaten, Eigenschaften, Talente, Zauber, Maximalwerte und Inventar. Helden können im Archiv nach einer Bestätigung wieder gelöscht werden.
 
-Zauber und Gegenstände besitzen ausführliche Detailansichten. Die Körperansicht verwaltet zonenbezogene Verletzungen, globale Statuseffekte und per Drag-and-drop ausgerüstete Gegenstände. Bestehende Heldendaten werden beim Laden automatisch um diese Bereiche ergänzt.
+Zauber und Gegenstände besitzen ausführliche Detailansichten. Die Körperansicht verwaltet zonenbezogene Verletzungen, globale Statuseffekte und per Drag-and-drop ausgerüstete Gegenstände. Bestehende Heldendaten werden beim Laden automatisch um diese Bereiche ergänzt. Im Resistenz-Tab lassen sich Schutzwerte, Immunitäten und Schwächen samt Notizen erfassen.
 
 Gegenstände können gezielt für die Körperansicht freigegeben und auf kompatible Plätze beschränkt werden. Ausgerüstete Körperzonen werden an der Figur hervorgehoben. Körperänderungen werden protokolliert; vom späteren Meistersystem gesetzte Statuseffekte und Einträge besitzen bereits eine deutlich rote Warnmarkierung.
 
@@ -88,6 +88,7 @@ Vite leitet `/api` während der Entwicklung an `127.0.0.1:3000` weiter. Die SQLi
 cd ~/apps/DSA
 npm ci
 npm run lint
+npm run test:smoke
 npm run build
 sudo mkdir -p /var/www/dsa
 sudo rsync -a --delete dist/ /var/www/dsa/

@@ -87,6 +87,7 @@ export interface ResistanceEntry {
   name: string;
   protection: number;
   immune: boolean;
+  weak: boolean;
   notes: string;
 }
 
