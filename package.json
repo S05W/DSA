@@ -6,7 +6,12 @@
   "scripts": {
     "dev": "vite",
     "server": "node server/server.mjs",
+    "server:local-test": "node server/local-test-server.mjs",
+    "import:heroes": "node server/import-heroes.mjs",
+    "prepare:local-test": "node server/prepare-local-test.mjs",
     "set-role": "node server/set-role.mjs",
+    "test:import": "node server/import-heroes-test.mjs",
+    "test:smoke": "node server/smoke-test.mjs",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview"

@@ -1,13 +1,16 @@
 import type {
   BodyPartId,
   BodyState,
+  CharacterTrait,
   EquipmentItem,
+  EquipmentItemType,
   EquipmentSlotId,
   Hero,
   NamedFeature,
+  TraditionalArtifact,
 } from "../models/Hero";
 import { createId } from "../utils/id";
-import { talentCheckFor } from "./talents";
+import { createDefaultTalents, talentCheckFor } from "./talents";
 
 export const bodyPartDefinitions: { id: BodyPartId; label: string; maxDamage: number }[] = [
   { id: "head", label: "Kopf", maxDamage: 4 },
@@ -20,16 +23,19 @@ export const bodyPartDefinitions: { id: BodyPartId; label: string; maxDamage: nu
   { id: "rightFoot", label: "Rechter Fuß", maxDamage: 3 },
 ];
 
-export const equipmentSlots: { id: EquipmentSlotId; label: string }[] = [
+export const equipmentSlots: { id: EquipmentSlotId; label: string; multiple?: boolean }[] = [
   { id: "head", label: "Kopf" },
-  { id: "neck", label: "Hals" },
-  { id: "torso", label: "Oberkörper" },
-  { id: "back", label: "Rücken" },
-  { id: "rightHand", label: "Rechte Hand" },
+  { id: "torso", label: "Torso" },
+  { id: "leftArm", label: "Linker Arm" },
+  { id: "rightArm", label: "Rechter Arm" },
   { id: "leftHand", label: "Linke Hand" },
-  { id: "belt", label: "Gürtel" },
-  { id: "legs", label: "Beine" },
-  { id: "feet", label: "Füße" },
+  { id: "rightHand", label: "Rechte Hand" },
+  { id: "belt", label: "Gürtel", multiple: true },
+  { id: "back", label: "Rücken", multiple: true },
+  { id: "leftLeg", label: "Linkes Bein" },
+  { id: "rightLeg", label: "Rechtes Bein" },
+  { id: "leftFoot", label: "Linker Fuß" },
+  { id: "rightFoot", label: "Rechter Fuß" },
 ];
 
 export const commonStatuses = [
@@ -74,16 +80,64 @@ function normalizeNamedFeature(entry: NamedFeature): NamedFeature {
   };
 }
 
+function normalizeTraditionalArtifact(entry: TraditionalArtifact): TraditionalArtifact {
+  return {
+    id: typeof entry.id === "string" && entry.id ? entry.id : createId(),
+    name: typeof entry.name === "string" ? entry.name : "",
+    type: typeof entry.type === "string" ? entry.type : "",
+    description: typeof entry.description === "string" ? entry.description : "",
+    improvements: typeof entry.improvements === "string" ? entry.improvements : "",
+  };
+}
+
+function migrateSlot(slot: unknown): EquipmentSlotId[] {
+  if (equipmentSlots.some((definition) => definition.id === slot)) return [slot as EquipmentSlotId];
+  if (slot === "neck") return ["head"];
+  if (slot === "legs") return ["leftLeg", "rightLeg"];
+  if (slot === "feet") return ["leftFoot", "rightFoot"];
+  return [];
+}
+
+function normalizeTrait(entry: CharacterTrait): CharacterTrait {
+  return {
+    id: typeof entry.id === "string" && entry.id ? entry.id : createId(),
+    name: typeof entry.name === "string" ? entry.name : "",
+    level: Math.max(1, Math.round(finiteNumber(entry.level, 1))),
+    apValue: Math.max(0, Math.round(finiteNumber(entry.apValue))),
+    description: typeof entry.description === "string" ? entry.description : "",
+    requirements: typeof entry.requirements === "string" ? entry.requirements : "",
+  };
+}
+
 function normalizeEquipment(item: EquipmentItem): EquipmentItem {
   const allowedSlots = Array.isArray(item.allowedSlots)
-    ? item.allowedSlots.filter((slot): slot is EquipmentSlotId => equipmentSlots.some((definition) => definition.id === slot))
+    ? [...new Set(item.allowedSlots.flatMap(migrateSlot))]
     : [];
+  const validTypes: EquipmentItemType[] = ["general", "weapon", "armor", "shield"];
+  const category = typeof item.category === "string" ? item.category.toLowerCase() : "";
+  const inferredType: EquipmentItemType = category.includes("schild")
+    ? "shield"
+    : category.includes("waffe")
+      ? "weapon"
+      : category.includes("rüstung") || finiteNumber(item.armor) > 0
+        ? "armor"
+        : "general";
+  const itemType = validTypes.includes(item.itemType as EquipmentItemType)
+    ? item.itemType as EquipmentItemType
+    : inferredType;
   return {
     ...item,
     id: typeof item.id === "string" && item.id ? item.id : createId(),
     name: typeof item.name === "string" ? item.name : "Unbenannter Gegenstand",
     quantity: Math.max(0, Math.round(finiteNumber(item.quantity, 1))),
     notes: typeof item.notes === "string" ? item.notes : "",
+    itemType,
+    armor: Math.max(0, Math.round(finiteNumber(item.armor))),
+    encumbrance: Math.max(0, Math.round(finiteNumber(item.encumbrance))),
+    attackModifier: Math.round(finiteNumber(item.attackModifier)),
+    parryModifier: Math.round(finiteNumber(item.parryModifier)),
+    ammunition: Math.max(0, Math.round(finiteNumber(item.ammunition))),
+    weaponKind: item.weaponKind === "ranged" ? "ranged" : "melee",
     showOnBody: Boolean(item.showOnBody),
     allowedSlots,
   };
@@ -94,9 +148,20 @@ export function normalizeHero(hero: Hero): Hero {
   const existingParts = Array.isArray(hero.body?.parts) ? hero.body.parts : [];
   const equipped: BodyState["equipped"] = {};
 
+  const legacyEquipped = hero.body?.equipped as Record<string, unknown> | undefined;
   for (const slot of equipmentSlots) {
-    const itemId = hero.body?.equipped?.[slot.id];
-    if (typeof itemId === "string" && equipment.some((item) => item.id === itemId)) equipped[slot.id] = itemId;
+    const raw = legacyEquipped?.[slot.id];
+    const ids = (Array.isArray(raw) ? raw : typeof raw === "string" ? [raw] : [])
+      .filter((itemId): itemId is string => typeof itemId === "string" && equipment.some((item) => item.id === itemId));
+    if (ids.length) equipped[slot.id] = slot.multiple ? [...new Set(ids)] : [ids[0]];
+  }
+
+  const legacySlotTargets: Record<string, EquipmentSlotId[]> = { neck: ["head"], legs: ["leftLeg", "rightLeg"], feet: ["leftFoot", "rightFoot"] };
+  for (const [legacySlot, targets] of Object.entries(legacySlotTargets)) {
+    const raw = legacyEquipped?.[legacySlot];
+    const ids = (Array.isArray(raw) ? raw : typeof raw === "string" ? [raw] : [])
+      .filter((itemId): itemId is string => typeof itemId === "string" && equipment.some((item) => item.id === itemId));
+    for (const target of targets) if (ids.length && !equipped[target]?.length) equipped[target] = [ids[0]];
   }
 
   const body: BodyState = {
@@ -129,22 +194,57 @@ export function normalizeHero(hero: Hero): Hero {
     })).slice(-100),
   };
 
+  const storedTalents = Array.isArray(hero.talents) ? hero.talents : [];
+  const defaultTalents = createDefaultTalents().map((talent) => {
+    const stored = storedTalents.find((entry) => entry.name === talent.name);
+    return stored
+      ? {
+          ...talent,
+          ...stored,
+          category: talent.category,
+          value: Math.max(0, finiteNumber(stored.value)),
+          check: typeof stored.check === "string" && stored.check ? stored.check : talent.check,
+        }
+      : { ...talent, value: 0 };
+  });
+  const knownTalentNames = new Set(defaultTalents.map((talent) => talent.name));
+  const customTalents = storedTalents
+    .filter((talent) => !knownTalentNames.has(talent.name))
+    .map((talent) => ({
+      ...talent,
+      value: Math.max(0, finiteNumber(talent.value)),
+      check: typeof talent.check === "string" && talent.check ? talent.check : talentCheckFor(talent.name),
+    }));
+
   return {
     ...hero,
     sessionActive: Boolean(hero.sessionActive),
-    talents: (Array.isArray(hero.talents) ? hero.talents : []).map((talent) => ({
-      ...talent,
-      check: typeof talent.check === "string" && talent.check ? talent.check : talentCheckFor(talent.name),
+    tradition: hero.tradition && typeof hero.tradition === "object" ? normalizeNamedFeature(hero.tradition) : null,
+    imprints: (Array.isArray(hero.imprints) ? hero.imprints : []).map(normalizeNamedFeature),
+    talents: [...defaultTalents, ...customTalents],
+    spells: (Array.isArray(hero.spells) ? hero.spells : []).map((spell) => ({
+      ...spell,
+      id: typeof spell.id === "string" && spell.id ? spell.id : createId(),
     })),
-    spells: Array.isArray(hero.spells) ? hero.spells : [],
     combat: {
-      attack: finiteNumber(hero.combat?.attack),
-      parry: finiteNumber(hero.combat?.parry),
+      soulpower: finiteNumber(hero.combat?.soulpower),
+      tenacity: finiteNumber(hero.combat?.tenacity),
       dodge: finiteNumber(hero.combat?.dodge),
       initiative: finiteNumber(hero.combat?.initiative),
       speed: finiteNumber(hero.combat?.speed, 8),
       armor: finiteNumber(hero.combat?.armor),
-      techniques: Array.isArray(hero.combat?.techniques) ? hero.combat.techniques : [],
+      techniques: (Array.isArray(hero.combat?.techniques) ? hero.combat.techniques : []).map((entry) => ({
+        ...entry,
+        id: typeof entry.id === "string" && entry.id ? entry.id : createId(),
+        name: typeof entry.name === "string" ? entry.name : "",
+        kind: entry.kind === "ranged" ? "ranged" : "melee",
+        skill: Math.max(0, finiteNumber(entry.skill)),
+        attack: Math.max(0, finiteNumber(entry.attack)),
+        parry: entry.kind === "ranged" ? null : Math.max(0, finiteNumber(entry.parry)),
+        primaryAttribute: typeof entry.primaryAttribute === "string" ? entry.primaryAttribute : "",
+        improvementCost: typeof entry.improvementCost === "string" ? entry.improvementCost : "",
+        notes: typeof entry.notes === "string" ? entry.notes : "",
+      })),
     },
     languages: Array.isArray(hero.languages) ? hero.languages : [],
     money: {
@@ -152,9 +252,19 @@ export function normalizeHero(hero: Hero): Hero {
       silver: finiteNumber(hero.money?.silver),
       heller: finiteNumber(hero.money?.heller),
     },
+    advantages: (Array.isArray(hero.advantages) ? hero.advantages : []).map(normalizeTrait),
+    disadvantages: (Array.isArray(hero.disadvantages) ? hero.disadvantages : []).map(normalizeTrait),
+    specialAbilities: (Array.isArray(hero.specialAbilities) ? hero.specialAbilities : []).map(normalizeNamedFeature),
     magicalSpecialAbilities: (Array.isArray(hero.magicalSpecialAbilities) ? hero.magicalSpecialAbilities : []).map(normalizeNamedFeature),
     cantrips: (Array.isArray(hero.cantrips) ? hero.cantrips : []).map(normalizeNamedFeature),
-    resistances: Array.isArray(hero.resistances) ? hero.resistances : [],
+    traditionalArtifacts: (Array.isArray(hero.traditionalArtifacts) ? hero.traditionalArtifacts : []).map(normalizeTraditionalArtifact),
+    resistances: (Array.isArray(hero.resistances) ? hero.resistances : []).map((entry) => ({
+      ...entry,
+      protection: Math.max(0, finiteNumber(entry.protection)),
+      immune: Boolean(entry.immune),
+      weak: Boolean(entry.weak) && !entry.immune,
+      notes: typeof entry.notes === "string" ? entry.notes : "",
+    })),
     equipment,
     body,
   };

@@ -2,19 +2,19 @@
 
 React-Frontend mit zentraler Node.js-API und SQLite-Datenbank. Jeder Benutzer kann mehrere Helden anlegen, öffnen und bearbeiten. Anmeldung und Heldendaten werden auf dem Server gespeichert.
 
-Der Heldenbogen besitzt einen geschützten Spielmodus für laufende Ressourcen und einen Setup-Modus für Grunddaten, Eigenschaften, Talente, Zauber, Maximalwerte und Inventar. Helden können im Archiv nach einer Bestätigung wieder gelöscht werden.
+Der Heldenbogen besitzt einen geschützten Spielmodus für laufende Ressourcen und einen Setup-Modus für Grunddaten, Eigenschaften, Talente, Magie, Maximalwerte und Inventar. Helden können im Archiv nach einer Bestätigung wieder gelöscht werden.
 
-Zauber und Gegenstände besitzen ausführliche Detailansichten. Die Körperansicht verwaltet zonenbezogene Verletzungen, globale Statuseffekte und per Drag-and-drop ausgerüstete Gegenstände. Bestehende Heldendaten werden beim Laden automatisch um diese Bereiche ergänzt.
+Talente, Zauber, Gegenstände, Vor- und Nachteile sowie Sonderfertigkeiten besitzen ausführliche Detailansichten. Tradition und Prägungen stehen in der Übersicht; der Tab „Magie“ enthält Zauber, magische Sonderfertigkeiten, Zaubertricks und Traditionsgegenstände. Bestehende Heldendaten werden beim Laden automatisch um die neuen Bereiche ergänzt. Im Resistenz-Tab lassen sich Schutzwerte, Immunitäten und Schwächen samt Notizen erfassen.
 
-Gegenstände können gezielt für die Körperansicht freigegeben und auf kompatible Plätze beschränkt werden. Ausgerüstete Körperzonen werden an der Figur hervorgehoben. Körperänderungen werden protokolliert; vom späteren Meistersystem gesetzte Statuseffekte und Einträge besitzen bereits eine deutlich rote Warnmarkierung.
+Gegenstände können gezielt für die Körperansicht freigegeben und auf kompatible Plätze beschränkt werden. Ein Klick auf Kopf, Torso, Arme, Hände, Beine oder Füße zeigt nur die jeweils passenden Gegenstände. Gürtel und Rücken nehmen mehrere Gegenstände auf; derselbe Inventargegenstand kann beispielsweise gleichzeitig an beiden Händen oder Füßen getragen werden. Ausgerüstete Körperzonen werden an der Figur hervorgehoben. Körperänderungen werden protokolliert; vom Meister gesetzte Statuseffekte besitzen eine deutlich rote Warnmarkierung.
 
-Die Körperfreigabe ist bei allen Gegenständen standardmäßig ausgeschaltet. Im Setup-Modus lässt sie sich direkt in der normalen Ausrüstungsliste aktivieren; anschließend werden die zulässigen Plätze ausgewählt. Beine und Füße besitzen getrennte Schadenszonen.
+Die Körperfreigabe ist bei allen Gegenständen standardmäßig ausgeschaltet. Im Setup-Modus lässt sie sich direkt in der normalen Ausrüstungsliste aktivieren; anschließend werden die zulässigen Plätze ausgewählt. Arme, Beine und Füße sind in linke und rechte Plätze getrennt.
 
 Talente zeigen ihre drei Eigenschaftsproben, während eine kompakte Eigenschaftsübersicht über Talenten und Zaubern den direkten Vergleich erleichtert. Die geschützte Würfelseite bietet W4, W6, W8, W10, W12, W20 und W100 sowie frei wählbare Würfelanzahl, Seitenzahl und Modifikator.
 
 Talent- und Zauberproben können direkt als 3W20-Probe ausgeführt werden. Die Auswertung zeigt jeden Einzelwurf, die verbrauchten Fertigkeitspunkte, Erfolg oder Misserfolg und die erreichte Qualitätsstufe. Erleichterungen und Erschwernisse lassen sich vor dem Wurf einstellen.
 
-Der Kampf-Tab verwaltet AT, PA, Ausweichen, Initiative, Geschwindigkeit und Rüstungsschutz. Kampftechniken sowie Sprachen und Schriften stehen zusätzlich unter den Talenten zur Verfügung. Die Übersicht enthält einen Geldbeutel für Dukaten, Silbertaler und Heller. Zaubertricks, magische Sonderfertigkeiten sowie ein eigener Bereich für Resistenzen und Immunitäten ergänzen den Heldenbogen.
+Der Kampf-Tab verwaltet Seelenkraft, Zähigkeit, Ausweichen, Initiative, Geschwindigkeit und Rüstungsschutz sowie Kampftechniken. AT und PA stehen weiterhin an den einzelnen Waffen beziehungsweise Kampftechniken. Waffen, Schilde und Rüstungen werden als Inventargegenstände gespeichert und erscheinen mit ihren kampfrelevanten Werten automatisch auch im Kampfbereich. Ein eigener Tab erfasst Vorteile und Nachteile mitsamt Stufen, AP-Werten, Regeltexten und Voraussetzungen. Sprachen und Schriften stehen bei den Talenten zur Verfügung. Die Übersicht enthält einen Geldbeutel für Dukaten, Silbertaler und Heller.
 
 ## Meisteransicht
 
@@ -84,10 +84,14 @@ Vite leitet `/api` während der Entwicklung an `127.0.0.1:3000` weiter. Die SQLi
 
 ## Installation auf dem Raspberry Pi
 
+Für das vorbereitete Updatepaket mit automatischem Backup, geprüftem
+Heldenimport und Rollback gilt die separate [Update-Anleitung](UPDATE-ANLEITUNG.md).
+
 ```bash
 cd ~/apps/DSA
 npm ci
 npm run lint
+npm run test:smoke
 npm run build
 sudo mkdir -p /var/www/dsa
 sudo rsync -a --delete dist/ /var/www/dsa/

@@ -2,7 +2,87 @@ import Button from "react-bootstrap/Button";
 import Form from "react-bootstrap/Form";
 import Modal from "react-bootstrap/Modal";
 import { equipmentSlots } from "../../data/body";
-import type { EquipmentItem, EquipmentSlotId, SpellValue } from "../../models/Hero";
+import type { CharacterTrait, EquipmentItem, EquipmentItemType, EquipmentSlotId, NamedFeature, SpellValue, TalentValue, TraditionalArtifact, WeaponKind } from "../../models/Hero";
+
+interface TalentDetailModalProps {
+  talent: TalentValue | null;
+  setup: boolean;
+  onHide: () => void;
+  onChange: (patch: Partial<TalentValue>) => void;
+}
+
+export function TalentDetailModal({ talent, setup, onHide, onChange }: TalentDetailModalProps) {
+  return (
+    <Modal show={Boolean(talent)} onHide={onHide} centered size="lg">
+      <Modal.Header closeButton><div><span className="detail-kicker">Talentdetails</span><Modal.Title>{talent?.name || "Talent"}</Modal.Title></div></Modal.Header>
+      {talent && <Modal.Body><div className="detail-form-grid">
+        <DetailField label="Talentkategorie" value={talent.category} setup={false} onChange={() => undefined} />
+        <DetailField label="Probe" value={talent.check} setup={setup} onChange={(value) => onChange({ check: value })} />
+        <DetailField label="Talentwert" value={String(talent.value)} type="number" setup={setup} onChange={(value) => onChange({ value: Math.max(0, Number(value) || 0) })} />
+        <DetailField label="Steigerungsfaktor" value={talent.improvementCost ?? ""} setup={setup} onChange={(value) => onChange({ improvementCost: value })} />
+        <DetailField label="Anwendungsgebiete" value={talent.applications ?? ""} setup={setup} onChange={(value) => onChange({ applications: value })} wide multiline />
+        <DetailField label="Belastung" value={talent.encumbrance ?? ""} setup={setup} onChange={(value) => onChange({ encumbrance: value })} />
+        <DetailField label="Werkzeuge" value={talent.tools ?? ""} setup={setup} onChange={(value) => onChange({ tools: value })} />
+        <DetailField label="Qualität" value={talent.quality ?? ""} setup={setup} onChange={(value) => onChange({ quality: value })} wide multiline />
+        <DetailField label="Misslungene Probe" value={talent.failedCheck ?? ""} setup={setup} onChange={(value) => onChange({ failedCheck: value })} wide multiline />
+        <DetailField label="Kritischer Erfolg" value={talent.criticalSuccess ?? ""} setup={setup} onChange={(value) => onChange({ criticalSuccess: value })} wide multiline />
+        <DetailField label="Patzer" value={talent.botch ?? ""} setup={setup} onChange={(value) => onChange({ botch: value })} wide multiline />
+        <DetailField label="Beschreibung / Notizen" value={talent.description ?? ""} setup={setup} onChange={(value) => onChange({ description: value })} wide multiline />
+      </div></Modal.Body>}
+      <Modal.Footer><Button variant="secondary" onClick={onHide}>Schließen</Button></Modal.Footer>
+    </Modal>
+  );
+}
+
+interface NamedFeatureDetailModalProps {
+  feature: NamedFeature | null;
+  title: string;
+  setup: boolean;
+  onHide: () => void;
+  onChange: (patch: Partial<NamedFeature>) => void;
+  onDelete?: () => void;
+}
+
+export function NamedFeatureDetailModal({ feature, title, setup, onHide, onChange, onDelete }: NamedFeatureDetailModalProps) {
+  return <Modal show={Boolean(feature)} onHide={onHide} centered size="lg">
+    <Modal.Header closeButton><div><span className="detail-kicker">{title}</span><Modal.Title>{feature?.name || title}</Modal.Title></div></Modal.Header>
+    {feature && <Modal.Body><div className="detail-form-grid"><DetailField label="Name" value={feature.name} setup={setup} onChange={(value) => onChange({ name: value })} /><DetailField label="Beschreibung" value={feature.description} setup={setup} onChange={(value) => onChange({ description: value })} wide multiline /></div></Modal.Body>}
+    <Modal.Footer>{setup && onDelete && <Button variant="outline-danger" onClick={onDelete}>Eintrag entfernen</Button>}<Button variant="secondary" onClick={onHide}>Schließen</Button></Modal.Footer>
+  </Modal>;
+}
+
+interface TraitDetailModalProps {
+  trait: CharacterTrait | null;
+  title: string;
+  setup: boolean;
+  onHide: () => void;
+  onChange: (patch: Partial<CharacterTrait>) => void;
+  onDelete?: () => void;
+}
+
+export function TraitDetailModal({ trait, title, setup, onHide, onChange, onDelete }: TraitDetailModalProps) {
+  return <Modal show={Boolean(trait)} onHide={onHide} centered size="lg">
+    <Modal.Header closeButton><div><span className="detail-kicker">{title}</span><Modal.Title>{trait?.name || title}</Modal.Title></div></Modal.Header>
+    {trait && <Modal.Body><div className="detail-form-grid"><DetailField label="Name" value={trait.name} setup={setup} onChange={(value) => onChange({ name: value })} /><DetailField label="Stufe" value={String(trait.level)} type="number" setup={setup} onChange={(value) => onChange({ level: Math.max(1, Number(value) || 1) })} /><DetailField label="AP je Stufe" value={String(trait.apValue)} type="number" setup={setup} onChange={(value) => onChange({ apValue: Math.max(0, Number(value) || 0) })} /><DetailField label="Voraussetzungen" value={trait.requirements} setup={setup} onChange={(value) => onChange({ requirements: value })} wide multiline /><DetailField label="Regelwirkung / Beschreibung" value={trait.description} setup={setup} onChange={(value) => onChange({ description: value })} wide multiline /></div></Modal.Body>}
+    <Modal.Footer>{setup && onDelete && <Button variant="outline-danger" onClick={onDelete}>Eintrag entfernen</Button>}<Button variant="secondary" onClick={onHide}>Schließen</Button></Modal.Footer>
+  </Modal>;
+}
+
+interface TraditionalArtifactDetailModalProps {
+  artifact: TraditionalArtifact | null;
+  setup: boolean;
+  onHide: () => void;
+  onChange: (patch: Partial<TraditionalArtifact>) => void;
+  onDelete: () => void;
+}
+
+export function TraditionalArtifactDetailModal({ artifact, setup, onHide, onChange, onDelete }: TraditionalArtifactDetailModalProps) {
+  return <Modal show={Boolean(artifact)} onHide={onHide} centered size="lg">
+    <Modal.Header closeButton><div><span className="detail-kicker">Traditionsgegenstand</span><Modal.Title>{artifact?.name || "Traditionsgegenstand"}</Modal.Title></div></Modal.Header>
+    {artifact && <Modal.Body><div className="detail-form-grid"><DetailField label="Name" value={artifact.name} setup={setup} onChange={(value) => onChange({ name: value })} /><DetailField label="Art" value={artifact.type} setup={setup} onChange={(value) => onChange({ type: value })} /><DetailField label="Beschreibung" value={artifact.description} setup={setup} onChange={(value) => onChange({ description: value })} wide multiline /><DetailField label="Verbesserungen" value={artifact.improvements} setup={setup} onChange={(value) => onChange({ improvements: value })} wide multiline /></div></Modal.Body>}
+    <Modal.Footer>{setup && <Button variant="outline-danger" onClick={onDelete}>Gegenstand entfernen</Button>}<Button variant="secondary" onClick={onHide}>Schließen</Button></Modal.Footer>
+  </Modal>;
+}
 
 interface SpellDetailModalProps {
   spell: SpellValue | null;
@@ -55,10 +135,33 @@ export function EquipmentDetailModal({ item, setup, equippedAt, onHide, onChange
         <div className="detail-form-grid">
           <DetailField label="Name" value={item.name} setup={setup} onChange={(value) => onChange({ name: value })} />
           <DetailField label="Anzahl" value={String(item.quantity)} type="number" setup={setup} onChange={(value) => onChange({ quantity: Math.max(1, Number(value)) })} />
+          <Form.Group><Form.Label>Gegenstandsart</Form.Label><Form.Select value={item.itemType ?? "general"} disabled={!setup} onChange={(event) => onChange({ itemType: event.target.value as EquipmentItemType })}><option value="general">Allgemein</option><option value="weapon">Waffe</option><option value="armor">Rüstung</option><option value="shield">Schild</option></Form.Select></Form.Group>
           <DetailField label="Kategorie" value={item.category ?? ""} setup={setup} onChange={(value) => onChange({ category: value })} placeholder="Waffe, Rüstung, Werkzeug …" />
           <DetailField label="Gewicht" value={item.weight ?? ""} setup={setup} onChange={(value) => onChange({ weight: value })} />
-          <DetailField label="Rüstungsschutz" value={String(item.armor ?? 0)} type="number" setup={setup} onChange={(value) => onChange({ armor: Math.max(0, Number(value)) })} />
           <DetailField label="Wert" value={item.value ?? ""} setup={setup} onChange={(value) => onChange({ value })} placeholder="z. B. 15 Silbertaler" />
+          {item.itemType === "weapon" && <>
+            <Form.Group><Form.Label>Einsatzart</Form.Label><Form.Select value={item.weaponKind ?? "melee"} disabled={!setup} onChange={(event) => onChange({ weaponKind: event.target.value as WeaponKind })}><option value="melee">Nahkampf</option><option value="ranged">Fernkampf</option></Form.Select></Form.Group>
+            <DetailField label="Kampftechnik" value={item.combatTechnique ?? ""} setup={setup} onChange={(value) => onChange({ combatTechnique: value })} placeholder="z. B. Schwerter" />
+            <DetailField label="Trefferpunkte" value={item.damage ?? ""} setup={setup} onChange={(value) => onChange({ damage: value })} placeholder="z. B. 1W6+4" />
+            <DetailField label="Schadensschwelle" value={item.damageThreshold ?? ""} setup={setup} onChange={(value) => onChange({ damageThreshold: value })} placeholder="z. B. KK 14" />
+            <DetailField label="AT-Modifikator" value={String(item.attackModifier ?? 0)} type="number" setup={setup} onChange={(value) => onChange({ attackModifier: Number(value) || 0 })} />
+            <DetailField label="PA-Modifikator" value={String(item.parryModifier ?? 0)} type="number" setup={setup} onChange={(value) => onChange({ parryModifier: Number(value) || 0 })} />
+            {item.weaponKind === "ranged" ? <>
+              <DetailField label="Reichweiten" value={item.range ?? ""} setup={setup} onChange={(value) => onChange({ range: value })} placeholder="nah / mittel / weit" />
+              <DetailField label="Ladezeit" value={item.reloadTime ?? ""} setup={setup} onChange={(value) => onChange({ reloadTime: value })} />
+              <DetailField label="Munition" value={String(item.ammunition ?? 0)} type="number" setup={setup} onChange={(value) => onChange({ ammunition: Math.max(0, Number(value)) })} />
+            </> : <DetailField label="Reichweite" value={item.reach ?? ""} setup={setup} onChange={(value) => onChange({ reach: value })} placeholder="kurz / mittel / lang" />}
+          </>}
+          {item.itemType === "armor" && <>
+            <DetailField label="Rüstungsschutz" value={String(item.armor ?? 0)} type="number" setup={setup} onChange={(value) => onChange({ armor: Math.max(0, Number(value)) })} />
+            <DetailField label="Belastung" value={String(item.encumbrance ?? 0)} type="number" setup={setup} onChange={(value) => onChange({ encumbrance: Math.max(0, Number(value)) })} />
+            <DetailField label="Zusätzliche Abzüge" value={item.additionalPenalties ?? ""} setup={setup} onChange={(value) => onChange({ additionalPenalties: value })} />
+          </>}
+          {item.itemType === "shield" && <>
+            <DetailField label="Kampftechnik" value={item.combatTechnique ?? ""} setup={setup} onChange={(value) => onChange({ combatTechnique: value })} placeholder="Schilde" />
+            <DetailField label="AT-Modifikator" value={String(item.attackModifier ?? 0)} type="number" setup={setup} onChange={(value) => onChange({ attackModifier: Number(value) || 0 })} />
+            <DetailField label="PA-Modifikator" value={String(item.parryModifier ?? 0)} type="number" setup={setup} onChange={(value) => onChange({ parryModifier: Number(value) || 0 })} />
+          </>}
           <DetailField label="Beschreibung" value={item.description ?? ""} setup={setup} onChange={(value) => onChange({ description: value })} wide multiline />
           <DetailField label="Notizen" value={item.notes} setup={setup} onChange={(value) => onChange({ notes: value })} wide multiline />
           <div className="detail-wide body-visibility-setting">

@@ -1,4 +1,4 @@
-import { useState, type DragEvent, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import Button from "react-bootstrap/Button";
 import Form from "react-bootstrap/Form";
 import { bodyPartDefinitions, commonStatuses, equipmentSlots } from "../../data/body";
@@ -15,7 +15,6 @@ interface BodyPanelProps {
 }
 
 export default function BodyPanel({ hero, setup, updateHero, onInspectItem }: BodyPanelProps) {
-  const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [statusDraft, setStatusDraft] = useState({ name: "", level: 1, cause: "", duration: "", notes: "" });
 
   function patchBody(updater: (body: Hero["body"]) => Hero["body"], historyMessage?: string) {
@@ -30,26 +29,25 @@ export default function BodyPanel({ hero, setup, updateHero, onInspectItem }: Bo
     const item = hero.equipment.find((candidate) => candidate.id === itemId);
     if (!item?.showOnBody || !item.allowedSlots?.includes(slot)) return;
     patchBody((body) => {
-      const equipped = Object.fromEntries(Object.entries(body.equipped).filter(([, currentItemId]) => currentItemId !== itemId)) as Hero["body"]["equipped"];
-      equipped[slot] = itemId;
+      const equipped = { ...body.equipped };
+      const definition = equipmentSlots.find((candidate) => candidate.id === slot);
+      const currentIds = equipped[slot] ?? [];
+      equipped[slot] = definition?.multiple
+        ? currentIds.includes(itemId) ? currentIds : [...currentIds, itemId]
+        : [itemId];
       return { ...body, equipped };
     }, `${item.name} wurde an „${equipmentSlots.find((candidate) => candidate.id === slot)?.label}“ ausgerüstet.`);
-    setSelectedItemId(null);
   }
 
-  function unequip(slot: EquipmentSlotId) {
-    const item = hero.equipment.find((candidate) => candidate.id === hero.body.equipped[slot]);
+  function unequip(slot: EquipmentSlotId, itemId: string) {
+    const item = hero.equipment.find((candidate) => candidate.id === itemId);
     patchBody((body) => {
       const equipped = { ...body.equipped };
-      delete equipped[slot];
+      const nextIds = (equipped[slot] ?? []).filter((currentId) => currentId !== itemId);
+      if (nextIds.length) equipped[slot] = nextIds;
+      else delete equipped[slot];
       return { ...body, equipped };
     }, item ? `${item.name} wurde abgelegt.` : undefined);
-  }
-
-  function dropOnSlot(event: DragEvent, slot: EquipmentSlotId) {
-    event.preventDefault();
-    const itemId = event.dataTransfer.getData("text/equipment-id");
-    if (itemId) equip(slot, itemId);
   }
 
   function patchPart(partId: BodyPartId, patch: Partial<Hero["body"]["parts"][number]>) {
@@ -87,26 +85,29 @@ export default function BodyPanel({ hero, setup, updateHero, onInspectItem }: Bo
     patchBody((body) => ({ ...body, statuses: body.statuses.filter((current) => current.id !== id) }), status ? `Status „${status.name}“ entfernt.` : undefined);
   }
 
-  const equippedIds = new Set(Object.values(hero.body.equipped));
+  const equippedIds = new Set(Object.values(hero.body.equipped).flatMap((ids) => ids ?? []));
   const bodyEquipment = hero.equipment.filter((item) => item.showOnBody);
-  const selectedItem = hero.equipment.find((item) => item.id === selectedItemId);
 
   return (
     <section className="dsa-panel body-panel">
       <div className="panel-heading"><span>Körper & Ausrüstung</span><small>Zustand und getragene Gegenstände</small></div>
-      <p className="panel-intro">Ziehe einen Gegenstand aus dem Inventar auf einen Ausrüstungsplatz. Auf Touch-Geräten zuerst den Gegenstand und danach den Platz antippen.</p>
+      <p className="panel-intro">Wähle direkt an der gewünschten Körperstelle einen passenden Gegenstand aus. An Gürtel und Rücken können mehrere Gegenstände gleichzeitig getragen werden.</p>
 
       <div className="body-workspace">
         <section className="equipment-slots" aria-label="Ausrüstungsplätze">
           <h2>Ausrüstungsplätze</h2>
           {equipmentSlots.map((slot) => {
-            const itemId = hero.body.equipped[slot.id];
-            const item = hero.equipment.find((candidate) => candidate.id === itemId);
-            const compatible = !selectedItem || Boolean(selectedItem.showOnBody && selectedItem.allowedSlots?.includes(slot.id));
+            const itemIds = hero.body.equipped[slot.id] ?? [];
+            const items = itemIds.map((itemId) => hero.equipment.find((candidate) => candidate.id === itemId)).filter((item) => Boolean(item));
+            const compatibleItems = bodyEquipment.filter((item) => item.allowedSlots?.includes(slot.id));
             return (
-              <div key={slot.id} className={`equipment-slot${item ? " occupied" : ""}${selectedItemId && compatible ? " ready" : ""}${selectedItemId && !compatible ? " incompatible" : ""}`} onDragOver={(event) => { if (compatible) event.preventDefault(); }} onDrop={(event) => dropOnSlot(event, slot.id)} onClick={() => { if (!item && selectedItemId && compatible) equip(slot.id, selectedItemId); }}>
-                <span>{slot.label}</span>
-                {item ? <><button type="button" className="slot-item" onClick={(event) => { event.stopPropagation(); onInspectItem(item.id); }}>{item.name}</button><button type="button" className="slot-remove" onClick={(event) => { event.stopPropagation(); unequip(slot.id); }} aria-label={`${item.name} ablegen`}>×</button></> : <small>Leer</small>}
+              <div key={slot.id} className={`equipment-slot${items.length ? " occupied" : ""}`}>
+                <span>{slot.label}{slot.multiple ? " · mehrfach" : ""}</span>
+                {items.length ? <div className="slot-equipped-list">{items.map((item) => item && <div key={item.id}><button type="button" className="slot-item" onClick={() => onInspectItem(item.id)}>{item.name}</button><button type="button" className="slot-remove" onClick={() => unequip(slot.id, item.id)} aria-label={`${item.name} ablegen`}>×</button></div>)}</div> : <small>Leer</small>}
+                <Form.Select value="" aria-label={`Ausrüstung für ${slot.label} auswählen`} disabled={!compatibleItems.length} onChange={(event) => { if (event.target.value) equip(slot.id, event.target.value); }}>
+                  <option value="">{slot.multiple ? "Weiteren Gegenstand hinzufügen …" : items.length ? "Ausrüstung ersetzen …" : "Ausrüstung auswählen …"}</option>
+                  {compatibleItems.filter((item) => !slot.multiple || !itemIds.includes(item.id)).map((item) => <option key={item.id} value={item.id}>{item.name}{item.quantity > 1 ? ` (${item.quantity}×)` : ""}</option>)}
+                </Form.Select>
               </div>
             );
           })}
@@ -136,10 +137,10 @@ export default function BodyPanel({ hero, setup, updateHero, onInspectItem }: Bo
       </div>
 
       <section className="body-inventory">
-        <div className="body-section-heading"><h2>Inventar zum Ausrüsten</h2><span>{selectedItemId ? "Gegenstand ausgewählt – jetzt Platz antippen" : "Ziehen oder antippen"}</span></div>
+        <div className="body-section-heading"><h2>Ausrüstbare Gegenstände</h2><span>Auswahl erfolgt oben direkt am Körperplatz</span></div>
         {bodyEquipment.length ? <div className="body-inventory-grid">{bodyEquipment.map((item) => (
-          <article key={item.id} draggable onDragStart={(event) => event.dataTransfer.setData("text/equipment-id", item.id)} className={`draggable-item${selectedItemId === item.id ? " selected" : ""}${equippedIds.has(item.id) ? " equipped" : ""}`}>
-            <button type="button" onClick={() => setSelectedItemId((current) => current === item.id ? null : item.id)}><strong>{item.name}</strong><span>{equippedIds.has(item.id) ? "Ausgerüstet" : `${item.quantity}× vorhanden`}</span></button>
+          <article key={item.id} className={`draggable-item${equippedIds.has(item.id) ? " equipped" : ""}`}>
+            <div><strong>{item.name}</strong><span>{equippedIds.has(item.id) ? "Ausgerüstet" : `${item.quantity}× vorhanden`}</span></div>
             <button type="button" className="item-details-button" onClick={() => onInspectItem(item.id)}>Details</button>
           </article>
         ))}</div> : <p className="empty-state">Aktiviere bei einem Gegenstand im Setup-Modus „Im Körperbereich anzeigen“.</p>}
@@ -181,16 +182,16 @@ export function BodyFigure({ hero }: { hero: Hero }) {
   };
   const equipped = (partId: BodyPartId) => {
     const slotsByPart: Record<BodyPartId, EquipmentSlotId[]> = {
-      head: ["head", "neck"],
+      head: ["head"],
       torso: ["torso", "back", "belt"],
-      leftArm: ["leftHand"],
-      rightArm: ["rightHand"],
-      leftLeg: ["legs"],
-      rightLeg: ["legs"],
-      leftFoot: ["feet"],
-      rightFoot: ["feet"],
+      leftArm: ["leftArm", "leftHand"],
+      rightArm: ["rightArm", "rightHand"],
+      leftLeg: ["leftLeg"],
+      rightLeg: ["rightLeg"],
+      leftFoot: ["leftFoot"],
+      rightFoot: ["rightFoot"],
     };
-    return slotsByPart[partId].some((slot) => Boolean(hero.body.equipped[slot]));
+    return slotsByPart[partId].some((slot) => Boolean(hero.body.equipped[slot]?.length));
   };
   const zoneClass = (partId: BodyPartId) => `body-zone ${severity(partId)}${equipped(partId) ? " equipped-zone" : ""}`;
   return (

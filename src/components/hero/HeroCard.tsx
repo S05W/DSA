@@ -10,7 +10,7 @@ interface HeroCardProps {
 }
 
 function HeroCard({ hero, onDelete }: HeroCardProps) {
-  const freeAp = hero.adventurePoints - hero.spentAdventurePoints;
+  const freeAp = Math.max(0, hero.adventurePoints - hero.spentAdventurePoints);
 
   return (
     <Card className={`hero-card hero-card-${hero.accent}`}>

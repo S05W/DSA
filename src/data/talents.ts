@@ -60,5 +60,15 @@ export const createDefaultTalents = (): TalentValue[] =>
       category,
       value: initialValues[name] ?? 0,
       check: talentCheckFor(name),
+      ...(name === "Alchimie" ? {
+        applications: "alchimistische Gifte, Elixiere, profane Alchimie",
+        encumbrance: "ja",
+        tools: "alchimistisches Labor",
+        quality: "Der Trank weist eine bessere Qualität auf.",
+        failedCheck: "Das Elixier ist misslungen oder eine Analyse hat kein Ergebnis gebracht.",
+        criticalSuccess: "Der Held weiß exakt, welches Elixier er vor sich hat, welche Stufe es besitzt und wie lange haltbar es ist.",
+        botch: "Das Elixier sorgt für einen unangenehmen Nebeneffekt.",
+        improvementCost: "C",
+      } : {}),
     })),
   );
